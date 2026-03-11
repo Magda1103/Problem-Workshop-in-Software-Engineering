@@ -1,0 +1,12 @@
+services:
+  ai_engine:
+    build: .
+    container_name: pip_ai_system
+    volumes:
+      - .:/app
+      - ./data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+      - ENV=development
+    tty: true
+    stdin_open: true

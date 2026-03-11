@@ -1,0 +1,9 @@
+numpy
+opencv-python
+torch
+torchvision
+pandas
+matplotlib
+tqdm
+fastapi
+uvicorn

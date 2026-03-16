@@ -1,0 +1,9 @@
+person_embraces_person
+person_enters_car
+person_holds_hand
+person_picks_up_object
+person_reads_document
+person_rides_bicycle
+person_shakes_hand
+person_steals_object
+person_talks_on_phone

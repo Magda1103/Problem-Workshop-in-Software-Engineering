@@ -95,7 +95,7 @@ def parse_args() -> argparse.Namespace:
 	parser.add_argument(
 		"--fps",
 		type=float,
-		default=25.0,
+		default=60.0,
 		help="Playback FPS for visualization",
 	)
 	parser.add_argument(

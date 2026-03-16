@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-import matplotlib.pyplot as plt
+import cv2
 import vipy
 
 
@@ -95,59 +95,167 @@ def parse_args() -> argparse.Namespace:
 	parser.add_argument(
 		"--fps",
 		type=float,
-		default=10.0,
+		default=25.0,
 		help="Playback FPS for visualization",
+	)
+	parser.add_argument(
+		"--display-width",
+		type=int,
+		default=0,
+		help="Resize display to this width for faster playback (<=0 disables resize)",
 	)
 	return parser.parse_args()
 
 
-def _set_window_title(figure: int, title: str) -> None:
-	"""Best-effort window title update for matplotlib-backed vipy display."""
-	fig = plt.figure(figure)
-	manager = getattr(fig.canvas, "manager", None)
-	if manager is not None and hasattr(manager, "set_window_title"):
-		manager.set_window_title(title)
+def _activity_label_text(category: str) -> str:
+	labels = {
+		"person_embraces_person": "person embracing person",
+		"person_enters_car": "person entering car",
+		"person_holds_hand": "person holding hand",
+		"person_picks_up_object": "person picking up object",
+		"person_reads_document": "person reading a book or document",
+		"person_rides_bicycle": "person riding bicycle",
+		"person_shakes_hand": "person shaking hands",
+		"person_steals_object": "person stealing object",
+		"person_talks_on_phone": "person talking on phone",
+	}
+	return labels.get(category, category.replace("_", " "))
 
 
-def play_scene_loop(scene: vipy.video.Scene, fps: float, figure: int = 1) -> None:
+def _build_track_activity_index(scene: vipy.video.Scene) -> dict[str, list[Any]]:
+	track_to_activities: dict[str, list[Any]] = {}
+	if not hasattr(scene, "activitylist"):
+		return track_to_activities
+
+	for activity in scene.activitylist():
+		for track_id in activity.trackids():
+			track_to_activities.setdefault(track_id, []).append(activity)
+
+	return track_to_activities
+
+
+def _draw_tracks(
+	frame: Any,
+	frame_index: int,
+	tracks: list[Any],
+	track_activities: dict[str, list[Any]],
+) -> Any:
+	for track in tracks:
+		if frame_index < track.startframe() or frame_index > track.endframe():
+			continue
+
+		det = track[frame_index]
+		if det is None:
+			continue
+
+		x1 = max(0, int(round(det.xmin())))
+		y1 = max(0, int(round(det.ymin())))
+		x2 = max(x1 + 1, int(round(det.xmax())))
+		y2 = max(y1 + 1, int(round(det.ymax())))
+
+		cv2.rectangle(frame, (x1, y1), (x2, y2), (40, 220, 40), 2)
+
+		label = (track.category() or "object").lower()
+		track_id = track.id() if hasattr(track, "id") else None
+		if track_id is not None:
+			active = [
+				_activity_label_text(activity.category())
+				for activity in track_activities.get(track_id, [])
+				if activity.during(frame_index)
+			]
+			if active:
+				label = " / ".join(dict.fromkeys(active))
+
+		cv2.putText(
+			frame,
+			label,
+			(x1, max(18, y1 - 8)),
+			cv2.FONT_HERSHEY_SIMPLEX,
+			0.5,
+			(40, 220, 40),
+			1,
+			cv2.LINE_AA,
+		)
+
+	return frame
+
+
+def _resize_frame(frame: Any, display_width: int | None) -> Any:
+	if not display_width or display_width <= 0:
+		return frame
+
+	h, w = frame.shape[:2]
+	if w <= display_width:
+		return frame
+
+	scale = display_width / float(w)
+	new_h = max(1, int(round(h * scale)))
+	return cv2.resize(frame, (display_width, new_h), interpolation=cv2.INTER_AREA)
+
+
+def play_scene_loop(scene: vipy.video.Scene, fps: float, display_width: int) -> None:
 	if fps <= 0:
 		raise ValueError("FPS must be positive")
 
-	target_fps = min(fps, scene.framerate()) if scene.framerate() is not None else fps
+	source_fps = scene.framerate() if scene.framerate() is not None else fps
+	target_fps = min(fps, source_fps)
 	if target_fps <= 0:
 		raise ValueError("Invalid target FPS")
 
-	mutator = vipy.image.mutator_show_noun_verb()
+	window_name = "EDA Playback"
+	tracks = scene.tracklist()
+	track_activities = _build_track_activity_index(scene)
+	cap = cv2.VideoCapture(scene.filename())
+	if not cap.isOpened():
+		raise RuntimeError(f"Unable to open video for playback: {scene.filename()}")
+
+	cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+	frame_index = 0
 	last_tick = time.perf_counter()
-	window_closed = False
+	fps_smooth = target_fps
 
-	fig = plt.figure(figure)
-
-	def _on_close(_event: Any) -> None:
-		nonlocal window_closed
-		window_closed = True
-
-	fig.canvas.mpl_connect("close_event", _on_close)
-
-	while True:
-		with vipy.util.Stopwatch() as sw:
-			for k, im in enumerate(scene.load() if scene.isloaded() else scene.stream()):
-				if window_closed or not plt.fignum_exists(figure):
+	try:
+		while True:
+			# If the user closed the window, exit before imshow can recreate it.
+			try:
+				if cv2.getWindowProperty(window_name, cv2.WND_PROP_VISIBLE) < 1:
 					return
+			except cv2.error:
+				return
 
-				time.sleep(max(0.0, (1.0 / target_fps) - sw.since()))
-				mutator(im, k).show(figure=figure, theme="dark")
+			frame_start = time.perf_counter()
+			ok, frame = cap.read()
+			if not ok:
+				cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+				frame_index = 0
+				continue
 
-				if window_closed or not plt.fignum_exists(figure):
+			frame = _draw_tracks(frame, frame_index, tracks, track_activities)
+			frame = _resize_frame(frame, display_width)
+
+			now = time.perf_counter()
+			inst_fps = 1.0 / max(now - last_tick, 1e-9)
+			last_tick = now
+			fps_smooth = (0.9 * fps_smooth) + (0.1 * inst_fps)
+			cv2.setWindowTitle(window_name, f"EDA Playback - {fps_smooth:.1f} FPS")
+			cv2.imshow(window_name, frame)
+
+			elapsed = time.perf_counter() - frame_start
+			wait_ms = max(1, int(round((1.0 / target_fps - elapsed) * 1000)))
+			key = cv2.waitKey(wait_ms) & 0xFF
+			if key in (27, ord("q")):
+				return
+
+			try:
+				if cv2.getWindowProperty(window_name, cv2.WND_PROP_VISIBLE) < 1:
 					return
+			except cv2.error:
+				return
 
-				now = time.perf_counter()
-				actual_fps = 1.0 / max(now - last_tick, 1e-9)
-				last_tick = now
-				_set_window_title(figure, f"EDA Playback - {actual_fps:.1f} FPS")
-
-				if vipy.globals._user_hit_escape():
-					return
+			frame_index += 1
+	finally:
+		cap.release()
+		cv2.destroyAllWindows()
 
 
 def main() -> None:
@@ -170,10 +278,10 @@ def main() -> None:
 
 	print(f"Selected video: {scene.filename()}")
 	print(f"Track count: {len(scene.tracklist())}")
-	print("Looping annotated playback in one window. Press Ctrl+C to stop.")
+	print("Looping annotated playback in one window. Close window or press Q/Esc to stop.")
 
 	try:
-		play_scene_loop(scene, fps=args.fps)
+		play_scene_loop(scene, fps=args.fps, display_width=args.display_width)
 	except KeyboardInterrupt:
 		print("Stopped.")
 

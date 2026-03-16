@@ -3,9 +3,11 @@ from __future__ import annotations
 import argparse
 import json
 import random
+import time
 from pathlib import Path
 from typing import Any
 
+import matplotlib.pyplot as plt
 import vipy
 
 
@@ -99,6 +101,55 @@ def parse_args() -> argparse.Namespace:
 	return parser.parse_args()
 
 
+def _set_window_title(figure: int, title: str) -> None:
+	"""Best-effort window title update for matplotlib-backed vipy display."""
+	fig = plt.figure(figure)
+	manager = getattr(fig.canvas, "manager", None)
+	if manager is not None and hasattr(manager, "set_window_title"):
+		manager.set_window_title(title)
+
+
+def play_scene_loop(scene: vipy.video.Scene, fps: float, figure: int = 1) -> None:
+	if fps <= 0:
+		raise ValueError("FPS must be positive")
+
+	target_fps = min(fps, scene.framerate()) if scene.framerate() is not None else fps
+	if target_fps <= 0:
+		raise ValueError("Invalid target FPS")
+
+	mutator = vipy.image.mutator_show_noun_verb()
+	last_tick = time.perf_counter()
+	window_closed = False
+
+	fig = plt.figure(figure)
+
+	def _on_close(_event: Any) -> None:
+		nonlocal window_closed
+		window_closed = True
+
+	fig.canvas.mpl_connect("close_event", _on_close)
+
+	while True:
+		with vipy.util.Stopwatch() as sw:
+			for k, im in enumerate(scene.load() if scene.isloaded() else scene.stream()):
+				if window_closed or not plt.fignum_exists(figure):
+					return
+
+				time.sleep(max(0.0, (1.0 / target_fps) - sw.since()))
+				mutator(im, k).show(figure=figure, theme="dark")
+
+				if window_closed or not plt.fignum_exists(figure):
+					return
+
+				now = time.perf_counter()
+				actual_fps = 1.0 / max(now - last_tick, 1e-9)
+				last_tick = now
+				_set_window_title(figure, f"EDA Playback - {actual_fps:.1f} FPS")
+
+				if vipy.globals._user_hit_escape():
+					return
+
+
 def main() -> None:
 	args = parse_args()
 
@@ -119,11 +170,10 @@ def main() -> None:
 
 	print(f"Selected video: {scene.filename()}")
 	print(f"Track count: {len(scene.tracklist())}")
-	print("Looping annotated playback. Press Ctrl+C to stop.")
+	print("Looping annotated playback in one window. Press Ctrl+C to stop.")
 
 	try:
-		while True:
-			scene.show(fps=args.fps)
+		play_scene_loop(scene, fps=args.fps)
 	except KeyboardInterrupt:
 		print("Stopped.")
 

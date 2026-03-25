@@ -11,3 +11,14 @@ services:
     command: python src/data_pipeline.py
     tty: true
     stdin_open: true
+
+  training:
+    build: .
+    container_name: pip_training
+    volumes:
+      - .:/app
+      - ./data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+    command: python src/model_utils/model_training.py

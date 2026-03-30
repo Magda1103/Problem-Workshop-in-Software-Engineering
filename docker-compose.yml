@@ -3,7 +3,7 @@ services:
     build: .
     container_name: pip_ai_system
     volumes:
-      - .:/app
+      - ./src:/app/src
       - ./data:/app/data
     environment:
       - PYTHONUNBUFFERED=1
@@ -16,9 +16,22 @@ services:
     build: .
     container_name: pip_training
     volumes:
-      - .:/app
+      - ./src:/app/src
       - ./data:/app/data
+      - ./models:/app/models
     environment:
       - PYTHONUNBUFFERED=1
-      - PYTHONPATH=/app
-    command: python src/model_utils/model_training.py
+    command: python -m src.model_utils.model_training
+
+  inference_engine:
+    build: .
+    container_name: pip_inference_engine
+    volumes:
+      - ./src:/app/src
+      - ./data:/app/data
+      - ./models:/app/models
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: python -m src.model_utils.inference_engine
+
+

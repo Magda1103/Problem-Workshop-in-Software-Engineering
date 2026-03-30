@@ -1,9 +1,12 @@
 import json
 from pathlib import Path
 
-import einops
-import keras
-from keras import layers
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+from torchvision.models import resnet18, resnet34, resnet50
+from torchvision.models import ResNet18_Weights, ResNet34_Weights, ResNet50_Weights
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 config_path = BASE_DIR / 'model_utils' / 'model_settings.json'
@@ -24,156 +27,143 @@ with open(categories_path, 'r') as file:
     CLASS_COUNT = len(category_list)
 
 
-class Conv2Plus1D(keras.layers.Layer):
-    def __init__(self, filters, kernel_size, padding):
-        """
-          Custom convolutional layer that decomposes 3D convolution into:
-            - spatial convolution (height, width)
-            - temporal convolution (time dimension)
-          This reduces computation while preserving performance.
-        """
+class Conv2Plus1D(nn.Module):
+    """
+     Custom convolutional layer that decomposes 3D convolution into:
+       - spatial convolution (height, width)
+       - temporal convolution (time dimension)
+     This reduces computation while preserving performance.
+   """
+
+    def __init__(self, in_channels, out_channels):
         super().__init__()
-        self.seq = keras.Sequential([
-            # Spatial decomposition
-            layers.Conv3D(filters=filters,
-                          kernel_size=(1, kernel_size[1], kernel_size[2]),
-                          padding=padding),
-            # Temporal decomposition
-            layers.Conv3D(filters=filters,
-                          kernel_size=(kernel_size[0], 1, 1),
-                          padding=padding)
-        ])
 
-    def call(self, x):
-        return self.seq(x)
+        self.mid_channels = out_channels // 2 if out_channels >= 2 else 1
+
+        self.spatial = nn.Conv3d(  # Extracts spatial features frame-by-frame.
+            in_channels,
+            self.mid_channels,
+            kernel_size=(1, 3, 3),  # (T, H, W)
+            padding=(0, 1, 1)  # padding = 0 in time
+        )
+        self.bn1 = nn.BatchNorm3d(self.mid_channels)
+
+        self.temporal = nn.Conv3d(  # Captures temporal dynamics across frames.
+            self.mid_channels,
+            out_channels,
+            kernel_size=(3, 1, 1),  # (T, H, W)
+            padding=(1, 0, 0)  # padding = 1 in time
+        )
+        self.bn2 = nn.BatchNorm3d(out_channels)
+
+        self.shortcut = nn.Sequential()
+        if in_channels != out_channels:  # Adjusts input channels for next operations.
+            self.shortcut = nn.Conv3d(in_channels, out_channels, kernel_size=1)
+
+    def forward(self, x):
+        identity = self.shortcut(x)
+
+        # Spatial features (Conv2D over H/W)
+        x = F.relu(self.bn1(self.spatial(x)))
+        # Temporal features (Conv1D over time)
+        x = self.bn2(self.temporal(x))
+
+        x += identity
+
+        return F.relu(x)
 
 
-class ResidualMain(keras.layers.Layer):
+class ActionRecognition(nn.Module):
     """
-        Residual block consisting of:
-            - Conv2Plus1D
-            - Layer Normalization
-            - ReLU activation
-            - Conv2Plus1D
-            - Layer Normalization
-    """
-
-    def __init__(self, filters, kernel_size):
-        super().__init__()
-        self.seq = keras.Sequential([
-            Conv2Plus1D(filters=filters,
-                        kernel_size=kernel_size,
-                        padding='same'),
-            layers.LayerNormalization(),
-            layers.ReLU(),
-            Conv2Plus1D(filters=filters,
-                        kernel_size=kernel_size,
-                        padding='same'),
-            layers.LayerNormalization()
-        ])
-
-    def call(self, x):
-        return self.seq(x)
-
-
-class Project(keras.layers.Layer):
-    """
-        Projection layer used to match tensor dimensions in residual connections.
-        Applies Dense layer followed by Layer Normalization.
-    """
-
-    def __init__(self, units):
-        super().__init__()
-        self.seq = keras.Sequential([
-            layers.Dense(units),
-            layers.LayerNormalization()
-        ])
-
-    def call(self, x):
-        return self.seq(x)
-
-
-def add_residual_block(input, filters, kernel_size):
-    """
-        Add residual blocks to the model. If the last dimensions of the input data
-        and filter size does not match, project it such that last dimension matches.
-    """
-    out = ResidualMain(filters,
-                       kernel_size)(input)
-
-    res = input
-    # Using the Keras functional APIs, project the last dimension of the tensor to
-    # match the new filter size
-    if out.shape[-1] != input.shape[-1]:
-        res = Project(out.shape[-1])(res)
-
-    return layers.add([res, out])
-
-
-class ResizeVideo(keras.layers.Layer):
-    """
-       Custom layer for resizing video frames using einops and Keras Resizing layer.
-    """
-
-    def __init__(self, height, width):
-        super().__init__()
-        self.height = height
-        self.width = width
-        self.resizing_layer = layers.Resizing(self.height, self.width)
-
-    def call(self, video):
-        """
-            Resize video tensor frame-by-frame.
-        """
-        # b stands for batch size, t stands for time, h stands for height,
-        # w stands for width, and c stands for the number of channels.
-        old_shape = einops.parse_shape(video, 'b t h w c')
-        images = einops.rearrange(video, 'b t h w c -> (b t) h w c')
-        images = self.resizing_layer(images)
-        videos = einops.rearrange(
-            images, '(b t) h w c -> b t h w c',
-            t=old_shape['t'])
-        return videos
-
-
-def create_model():
-    """
-        Build and return the video classification model.
+        Build the video classification model.
 
         Architecture:
+        - ResNet
         - Initial Conv2Plus1D + normalization + activation
         - Multiple residual blocks with downsampling
         - Global pooling and dense classification layer
-
-        Returns:
-            keras.Model: Compiled Keras model.
     """
-    input_shape = (None, FRAMES_COUNT, HEIGHT, WIDTH, 3)
-    input = layers.Input(shape=(input_shape[1:]))
-    x = input
 
-    x = Conv2Plus1D(filters=16, kernel_size=(3, 7, 7), padding='same')(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.ReLU()(x)
-    x = ResizeVideo(HEIGHT // 2, WIDTH // 2)(x)
+    OUT_CHANNELS = {  # Maps ResNet variant to feature dimension.
+        "resnet18": 512,
+        "resnet34": 512,
+        "resnet50": 2048
+    }
 
-    # Block 1
-    x = add_residual_block(x, 16, (3, 3, 3))
-    x = ResizeVideo(HEIGHT // 4, WIDTH // 4)(x)
+    def __init__(self, num_classes, backbone_type='resnet18'):
+        super().__init__()
 
-    # Block 2
-    x = add_residual_block(x, 32, (3, 3, 3))
-    x = ResizeVideo(HEIGHT // 8, WIDTH // 8)(x)
+        if backbone_type == 'resnet18':
+            backbone = resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
+        elif backbone_type == 'resnet34':
+            backbone = resnet34(weights=ResNet34_Weights.IMAGENET1K_V1)
+        elif backbone_type == 'resnet50':
+            backbone = resnet50(weights=ResNet50_Weights.IMAGENET1K_V1)
+        else:
+            backbone = resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
 
-    # Block 3
-    x = add_residual_block(x, 64, (3, 3, 3))
-    x = ResizeVideo(HEIGHT // 16, WIDTH // 16)(x)
+        self.backbone = backbone
 
-    # Block 4
-    x = add_residual_block(x, 128, (3, 3, 3))
+        self.backbone = nn.Sequential(
+            *list(self.backbone.children())[:-2])  # Use ResNet layers, but remove detection head and global pooling.
+        self.out_channels = self.OUT_CHANNELS.get(backbone_type, 512)
 
-    x = layers.GlobalAveragePooling3D()(x)
-    x = layers.Flatten()(x)
-    x = layers.Dense(CLASS_COUNT)(x)
+        for param in self.backbone.parameters():
+            param.requires_grad = False  # Freeze backbone - no gradient updates.
 
-    return keras.Model(input, x)
+        self.conv1 = nn.Conv3d(self.out_channels,
+                               16,
+                               kernel_size=(3, 7, 7),
+                               padding=(1, 3, 3))
+
+        self.bn1 = nn.BatchNorm3d(16)
+
+        self.pool = nn.MaxPool3d((1, 2, 2))  # Downsamples spatial dimensions only.
+
+        self.block1 = Conv2Plus1D(16, 16)
+        self.block2 = Conv2Plus1D(16, 32)
+        self.block3 = Conv2Plus1D(32, 64)
+        self.block4 = Conv2Plus1D(64, 128)
+
+        self.gap = nn.AdaptiveAvgPool3d(1)  # Collapse spatial and temporal dimensions - change to (B, C, 1, 1, 1)
+        self.fc = nn.Linear(128, num_classes)  # Final classification layer.
+
+    def forward(self, x):
+        B, C, T, H, W = x.shape  # (B - batch, C - channels (RGB), T - number of frames, H, W)
+
+        x = x.permute(0, 2, 1, 3, 4)  # (B, T, C, H, W)
+        x = x.reshape(B * T, C, H, W)  # (B*T, C, H, W) - Flatten time into batch dimension.
+
+        with torch.no_grad():
+            feat = self.backbone(x)  # Extract features without training ResNet.
+
+        _, C2, H2, W2 = feat.shape
+
+        feat = feat.view(B, T, C2, H2, W2)
+        x = feat.permute(0, 2, 1, 3, 4)  # (B, C2, T, H, W) - Restore temporal structure.
+
+        x = F.relu(self.bn1(self.conv1(x)))
+        x = self.pool(x)
+
+        # Progressive feature extraction + downsampling
+        x = self.block1(x)
+
+        x = self.block2(x)
+        x = self.pool(x)
+
+        x = self.block3(x)
+
+        x = self.block4(x)
+
+        x = self.gap(x)  # Global pooling - (B, C, T, H, W) -> (B, C, 1, 1, 1)
+        x = x.view(x.size(0), -1)  # Flatten for linear layer
+
+        return self.fc(x)
+
+
+def create_model(num_classes=CLASS_COUNT, backbone_type='resnet18'):
+    model = ActionRecognition(
+        num_classes=num_classes,
+        backbone_type=backbone_type
+    )
+    return model

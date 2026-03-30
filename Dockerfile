@@ -1,7 +1,7 @@
-FROM python:3.11-slim
+FROM python:3.11
 
-# Instalacja zależności systemowych dla OpenCV i wideo
-# Zaktualizowano pakiety dla nowszych wersji Debiana
+# Installation of system dependencies for OpenCV and video.
+# Update on packages for newer Debian versions.
 RUN apt-get update && apt-get install -y \
     libgl1 \
     libglx-mesa0 \
@@ -9,14 +9,14 @@ RUN apt-get update && apt-get install -y \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-# Ustawienie katalogu roboczego
+# Setting the working directory
 WORKDIR /app
 
-# Kopiowanie i instalacja bibliotek Pythona
+# Copying and installing Python libraries
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Kopiowanie reszty kodu
+# Copying the rest of the code
 COPY . .
 
 CMD ["python", "main.py"]

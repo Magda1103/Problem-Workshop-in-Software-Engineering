@@ -1,184 +1,244 @@
+import os
 import random
 from pathlib import Path
-import os
 
 import cv2
 import numpy as np
-import tensorflow as tf
+import torch
+import torch.nn as nn
+from tqdm import tqdm
+from torch.utils.data import Dataset, DataLoader, Subset
+from sklearn.model_selection import StratifiedShuffleSplit
 
 from src.model_utils.baseline_model import create_model, WIDTH, HEIGHT, EPOCHS, BATCH_SIZE, FRAME_STEP, FRAMES_COUNT
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
-
 INPUT_FOLDER = BASE_DIR / 'data' / 'videos'
-OUTPUT_FOLDER = BASE_DIR / 'dataset_split'
-MODEL_OUTPUT = BASE_DIR / 'models' / 'best_model.keras'
+MODEL_OUTPUT = BASE_DIR / 'models' / 'best_model.pth'
+os.makedirs(os.path.dirname(MODEL_OUTPUT), exist_ok=True)
 
 
 def preprocess_frame(frame):
     """
-        Convert a raw BGR frame (from OpenCV) into a normalized RGB frame.
+        Preprocess the frame before feeding it to the model:
+
+        Steps:
+            - Resize frame to (WIDTH, HEIGHT)
+            - Convert color from BGR (OpenCV default) to RGB
+            - Normalize pixel values to range [0, 1]
+            - Convert to float32
     """
     frame = cv2.resize(frame, (WIDTH, HEIGHT))
-    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # Convert color format from BGR to RGB.
     frame = frame.astype(np.float32) / 255.0
     return frame
 
 
-def extract_clips(video_path, frames_limit, frame_step):
+def split_dataset(dataset, val_ratio=0.2):
     """
-        Extract clips (subsequences of frames) from a video file.
+        Split dataset into training and validation sets.
+
+        The dataset is randomly shuffled and then divided according
+        to the given validation ratio.
     """
-    cap = cv2.VideoCapture(video_path)
-    frames = []
+    all_labels = [label for _, label in dataset.samples]
+    all_labels = np.array(all_labels)
 
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
+    sss = StratifiedShuffleSplit(n_splits=1, test_size=val_ratio, random_state=42)
+    train_idx, val_idx = next(sss.split(np.zeros(len(all_labels)), all_labels))
 
-        frame = preprocess_frame(frame)
+    train_subset = Subset(dataset, train_idx)
+    val_subset = Subset(dataset, val_idx)
 
-        frames.append(frame)
-
-    cap.release()
-
-    clips = []
-    for start in range(0, len(frames) - frames_limit + 1, frame_step):
-        clip = frames[start: start + frames_limit]
-        clips.append(np.array(clip))
-
-    return clips
+    return train_subset, val_subset
 
 
-def load_dataset(dataset_dir, frames_limit, frame_step, batch_size):
+def create_dataloaders(all_data_dir, batch_size, val_ratio=0.2):
     """
-        Load dataset using a generator and convert it into a TensorFlow Dataset.
+        Build datasets and dataloaders for training and validation.
     """
-    classes = sorted(os.listdir(dataset_dir))
-    class_to_idx = {cls: idx for idx, cls in enumerate(classes)}
+    classes = sorted(os.listdir(all_data_dir))  # Reads class names from directory structure.
+    class_to_idx = {cls: i for i, cls in enumerate(classes)}  # Maps class names to numeric labels.
 
-    def generator():
-        for cls in classes:
+    # Custom dataset that loads and processes video clips.
+    full_dataset = VideoDataset(all_data_dir, FRAMES_COUNT, FRAME_STEP, class_to_idx)
+    train_dataset, val_dataset = split_dataset(full_dataset, val_ratio=val_ratio)
+
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False,
+                            num_workers=0)  # Keep validation deterministic (shuffle=False).
+
+    return train_loader, val_loader, class_to_idx
+
+
+class VideoDataset(Dataset):
+    """
+        Converts raw videos into tensors for the model.
+    """
+
+    def __init__(self, dataset_dir, frames_limit, frame_step, class_to_idx):
+        self.samples = []
+        self.frames_limit = frames_limit
+        self.frame_step = frame_step
+        self.class_to_idx = class_to_idx
+
+        for cls in os.listdir(dataset_dir):
             cls_dir = os.path.join(dataset_dir, cls)
+            if not os.path.isdir(cls_dir):
+                continue
             for fname in os.listdir(cls_dir):
                 if fname.endswith(('.mp4', '.avi', '.mov')):
-                    path = os.path.join(cls_dir, fname)
+                    self.samples.append((  # Each sample = video path + class index.
+                        os.path.join(cls_dir, fname),
+                        class_to_idx[cls]
+                    ))
 
-                    clips = extract_clips(path, frames_limit, frame_step)
-                    for clip in clips:
-                        yield clip, class_to_idx[cls]
+    def extract_clips(self, video_path):
+        """
+            Extract fixed-length clips from a video file.
 
-    ds = tf.data.Dataset.from_generator(
-        generator,
-        output_signature=(
-            tf.TensorSpec(shape=(frames_limit, HEIGHT, WIDTH, 3), dtype=tf.float32),
-            tf.TensorSpec(shape=(), dtype=tf.int32)
-        )
-    )
+            The video is read frame by frame, preprocessed, and then split into
+            multiple overlapping clips using a sliding window approach.
 
-    return ds.shuffle(200).batch(batch_size).prefetch(tf.data.AUTOTUNE), class_to_idx
+            Each clip consists of a fixed number of consecutive frames
+            (`self.frames_limit`), sampled every `self.frame_step`.
+        """
+        cap = cv2.VideoCapture(video_path)  # Open video file.
+        frames = []
+
+        while cap.isOpened():
+            ret, frame = cap.read()  # If ret=False -> the end of the video.
+            if not ret:
+                break
+            frames.append(preprocess_frame(frame))  # List of all frames (T, H, W, C)
+
+        cap.release()
+
+        clips = []
+        for start in range(0, len(frames) - self.frames_limit + 1, self.frame_step):
+            clip = frames[start:start + self.frames_limit]
+            clips.append(np.array(clip))  # Extracts multiple clips from one video.
+
+        return clips
+
+    def __len__(self):
+        """
+            Return the length of the dataset.
+        """
+        return len(self.samples)
+
+    def __getitem__(self, idx):
+        """
+            Retrieve a single training sample (clip and label) from the dataset.
+
+            For a given index, the corresponding video is loaded and split into
+            multiple clips. One clip is randomly selected to improve generalization.
+
+            If the video is too short to produce any valid clip, another random
+            sample is selected.
+        """
+        video_path, label = self.samples[idx]
+
+        clips = self.extract_clips(video_path)  # Multipal clips from one video.
+
+        if len(clips) == 0:  # If the video is too short -> random picking new one.
+            return self.__getitem__(random.randint(0, len(self.samples) - 1))
+
+        clip = random.choice(clips)  # Random sample from video for better generalization.
+
+        clip = np.transpose(clip, (3, 0, 1, 2))  # Reorder dimensions for PyTorch: (T, H, W, C) -> (C, T, H, W).
+
+        return torch.tensor(clip, dtype=torch.float32), torch.tensor(label)  # (C, T, H, W), scalar
 
 
-def split_dataset(source_dir, output_dir, splits, seed=42):
+def train_model(model, train_loader, val_loader, epochs, device):
     """
-        Split dataset into train/validation/test subsets.
-
-        Each class is split independently while preserving class balance.
-        Symbolic links are created instead of copying files.
+        Perform training and validation, save the best model.
     """
-    random.seed(seed)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+    criterion = nn.CrossEntropyLoss()
 
-    classes = sorted(os.listdir(source_dir))
+    model.to(device)
 
-    # Create folders for output
-    for split in splits:
-        for cls in classes:
-            os.makedirs(os.path.join(output_dir, split, cls), exist_ok=True)
+    best_val_acc = 0.0  # Tracking the best validation accuracy.
 
-    stats = {split: 0 for split in splits}
+    for epoch in range(epochs):
+        print(f"\nEpoch {epoch + 1}/{epochs}")
 
-    for cls in classes:
-        cls_dir = os.path.join(source_dir, cls)
-        videos = [f for f in os.listdir(cls_dir)
-                  if f.endswith(('.mp4', '.avi', '.mov'))]
+        model.train()
+        total_loss = 0
+        correct = 0
+        total = 0
 
-        total_needed = sum(splits.values())
+        for x, y in tqdm(train_loader):
+            x, y = x.to(device), y.to(device)
 
-        if len(videos) < total_needed:
-            print(f"Class '{cls}': has {len(videos)} videos, "
-                  f"needed {total_needed}")
-            continue
+            optimizer.zero_grad()  # Reset gradients before backprop.
+            outputs = model(x)
 
-        random.shuffle(videos)
+            loss = criterion(outputs, y)
+            loss.backward()
+            optimizer.step()
 
-        # Assign video to splits
-        idx = 0
-        for split, count in splits.items():
-            for video in videos[idx:idx + count]:
-                src = os.path.join(cls_dir, video)
-                dst = os.path.join(output_dir, split, cls, video)
-                os.symlink(os.path.abspath(src), dst)
-            stats[split] += count
-            idx += count
+            total_loss += loss.item()
+
+            _, preds = torch.max(outputs, 1)  # Get the class with the higher probability.
+            correct += (preds == y).sum().item()
+            total += y.size(0)  # Dimension 0 = batch size.
+
+        train_acc = correct / total
+
+        model.eval()
+        correct = 0
+        total = 0
+
+        with torch.no_grad():
+            for x, y in val_loader:
+                x, y = x.to(device), y.to(device)
+                outputs = model(x)
+
+                _, preds = torch.max(outputs, 1)
+                correct += (preds == y).sum().item()
+                total += y.size(0)
+
+        val_acc = correct / total
+
+        print(f"Loss: {total_loss:.4f} | Train Acc: {train_acc:.4f} | Val Acc: {val_acc:.4f}")
+
+        if val_acc > best_val_acc:
+            best_val_acc = val_acc
+            torch.save(model.state_dict(), MODEL_OUTPUT)  # Save best model weights.
+            print("Model saved!")
 
 
 if __name__ == "__main__":
     """
-        Main training pipeline:
-            - Split dataset (if not already split)
-            - Load datasets
-            - Build and compile model
-            - Train model with callbacks
+        Entry point for training the video classification model.
+
+        Steps:
+            - Set device to GPU if available, otherwise CPU.
+            - Create training and validation data loaders.
+            - Instantiate the model with the correct number of classes.
+            - Train the model using the train_model function.
     """
 
-    if not os.path.exists(OUTPUT_FOLDER) or not os.listdir(OUTPUT_FOLDER):
-        split_dataset(
-            source_dir=INPUT_FOLDER,
-            output_dir=OUTPUT_FOLDER,
-            splits={"train": 30, "val": 10, "test": 10}
-        )
-    else:
-        print("Dataset is already split.")
+    # Set device
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    train_ds, class_to_idx = load_dataset(OUTPUT_FOLDER / 'train', FRAMES_COUNT, FRAME_STEP, BATCH_SIZE)
-    val_ds, _ = load_dataset(OUTPUT_FOLDER / 'val', FRAMES_COUNT, FRAME_STEP, BATCH_SIZE)
-
-    model = create_model()
-
-    model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
-        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-        metrics=['accuracy']
+    # Prepare data loaders
+    train_loader, val_loader, class_to_idx = create_dataloaders(
+        INPUT_FOLDER,
+        BATCH_SIZE
     )
 
-    model.summary()
+    # Create model
+    model = create_model(num_classes=len(class_to_idx))
 
-    callbacks = [
-        # Stop if val_loss does not decrease for 5 epochs
-        tf.keras.callbacks.EarlyStopping(
-            monitor='val_loss',
-            patience=5,
-            restore_best_weights=True
-        ),
-        # Save the best model
-        tf.keras.callbacks.ModelCheckpoint(
-            filepath=str(MODEL_OUTPUT),
-            monitor='val_accuracy',
-            save_best_only=True
-        ),
-        # Reduce learning rate when the model becomes stagnant
-        tf.keras.callbacks.ReduceLROnPlateau(
-            monitor='val_loss',
-            factor=0.5,
-            patience=3
-        )
-    ]
-
-    # Training
-    history = model.fit(
-        train_ds,
-        validation_data=val_ds,
-        epochs=EPOCHS,
-        callbacks=callbacks
+    # Train model
+    train_model(
+        model,
+        train_loader,
+        val_loader,
+        EPOCHS,
+        device
     )

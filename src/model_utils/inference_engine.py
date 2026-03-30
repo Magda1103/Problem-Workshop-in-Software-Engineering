@@ -1,17 +1,17 @@
+import os
 import threading
-from collections import deque
+from collections import deque, Counter
 from pathlib import Path
+from queue import Queue
 
 import cv2
 import numpy as np
-import tensorflow as tf
+import torch
 
-from src.model_utils.baseline_model import FRAME_STEP, FRAMES_COUNT
-from src.model_utils.model_training import preprocess_frame
+from src.model_utils.baseline_model import FRAME_STEP, FRAMES_COUNT, CLASS_COUNT, ActionRecognition
+from src.model_utils.model_training import preprocess_frame, MODEL_OUTPUT, INPUT_FOLDER
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-MODEL_PATH = BASE_DIR / 'models' / 'best_model.keras'
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 class InferenceEngine:
@@ -26,16 +26,28 @@ class InferenceEngine:
     def __init__(self, frame_step, frames_limit, path):
         self.frame_step = frame_step
         self.frames_limit = frames_limit
-        self.buffer = deque(maxlen=self.frames_limit)
+        self.buffer = deque(maxlen=self.frames_limit)  # Automatically maintain maxlen elements (deletes older element)
         self.lock = threading.Lock()
         self.stop_event = threading.Event()
-        self.inference_event = threading.Event()
 
         self.frame_count = 0
         self.predictions = []
+        self.final = None
+        self.queue = Queue()  # Thread-safe FIFO
 
-        self.model = tf.keras.models.load_model(str(MODEL_PATH))
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        model_loaded = ActionRecognition(num_classes=CLASS_COUNT, backbone_type='resnet18')
+        model_loaded.load_state_dict(torch.load(MODEL_OUTPUT))
+        model_loaded.to(self.device)
+        model_loaded.eval()
+
+        self.model = model_loaded
         self.path = path
+
+        classes = sorted(os.listdir(INPUT_FOLDER))  # Reads class names from directory structure.
+        class_to_idx = {cls: i for i, cls in enumerate(classes)}  # Maps class names to numeric labels.
+        self.idx_to_class = {v: k for k, v in class_to_idx.items()}
 
     def run_inference(self):
         """
@@ -44,22 +56,29 @@ class InferenceEngine:
                 - Copies current buffer (sliding window)
                 - Runs model prediction
         """
-        while not self.stop_event.is_set():
-            triggered = self.inference_event.wait(timeout=1.0)
-            if not triggered:
+        i = 0
+        while not self.stop_event.is_set() or not self.queue.empty():
+            try:
+                window = self.queue.get(timeout=1)
+            except:
                 continue
 
-            self.inference_event.clear()
+            # Convert to PyTorch tensor: (B, T, H, W, C) -> (B, C, T, H, W)
+            tensor = torch.tensor(np.expand_dims(window, axis=0))  # (1, T, H, W, C)
+            tensor = tensor.permute(0, 4, 1, 2, 3).to(self.device)
 
-            with self.lock:
-                window = np.array(list(self.buffer))
+            with torch.no_grad():
+                output = self.model(tensor)
+                _, pred = torch.max(output, 1)
 
-            tensor = tf.convert_to_tensor(np.expand_dims(window, axis=0))
+            self.predictions.append(pred.item())
+            pred_label = self.idx_to_class[pred.item()]
+            print(f"Predicted class ({i}): {pred_label}")
+            i = i + 1
 
-            prediction = self.model.predict(tensor)
-            predicted_class = np.argmax(prediction)
-            self.predictions.append(predicted_class)
-            print(f"Predicted clas: {predicted_class}")
+        self.final = Counter(self.predictions).most_common(1)[0][0]
+        print("=" * 45)
+        print(f"Final prediction: {self.idx_to_class[self.final]}")
 
     def perform_using_sliding_window(self):
         """
@@ -88,7 +107,9 @@ class InferenceEngine:
             frame_index += 1
 
             if frame_index % self.frame_step == 0 and len(self.buffer) == self.frames_limit:
-                self.inference_event.set()
+                with self.lock:
+                    window = np.array(list(self.buffer), dtype=np.float32)
+                self.queue.put(window)
 
         cap.release()
         self.stop_event.set()
@@ -107,4 +128,5 @@ if __name__ == "__main__":
 
     engine = InferenceEngine(frame_step=FRAME_STEP, frames_limit=FRAMES_COUNT,
                              path=VIDEO_PATH)
+
     engine.perform_using_sliding_window()

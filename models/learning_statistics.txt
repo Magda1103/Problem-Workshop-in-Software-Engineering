@@ -1,0 +1,32 @@
+pip_training   | Epoch 1/10
+100%|██████████| 3442/3442 [2:02:46<00:00,  2.14s/it]
+pip_training   | Loss: 6300.3968 | Train Acc: 0.3233 | Val Acc: 0.4153
+pip_training   | Model saved!
+pip_training   |
+pip_training   | Epoch 2/10
+100%|██████████| 3442/3442 [2:05:34<00:00,  2.19s/it]
+pip_training   | Loss: 5519.2556 | Train Acc: 0.4194 | Val Acc: 0.4708
+pip_training   | Model saved!
+pip_training   |
+pip_training   | Epoch 3/10
+100%|██████████| 3442/3442 [2:09:01<00:00,  2.25s/it]
+pip_training   | Loss: 5082.5697 | Train Acc: 0.4644 | Val Acc: 0.4699
+pip_training   |
+pip_training   | Epoch 4/10
+100%|██████████| 3442/3442 [2:04:29<00:00,  2.17s/it]
+pip_training   | Loss: 4805.0280 | Train Acc: 0.4948 | Val Acc: 0.4978
+pip_training   | Model saved!
+pip_training   |
+pip_training   | Epoch 5/10
+100%|██████████| 3442/3442 [2:07:44<00:00,  2.23s/it]
+pip_training   | Loss: 4569.3051 | Train Acc: 0.5174 | Val Acc: 0.5083
+pip_training   | Model saved!
+pip_training   |
+pip_training   | Epoch 6/10
+100%|██████████| 3442/3442 [2:11:54<00:00,  2.30s/it]
+pip_training   | Loss: 4299.9630 | Train Acc: 0.5388 | Val Acc: 0.5153
+pip_training   | Model saved!
+pip_training   |
+pip_training   | Epoch 7/10
+100%|██████████| 3442/3442 [2:11:18<00:00,  2.29s/it]
+pip_training   | Loss: 4129.0779 | Train Acc: 0.5558 | Val Acc: 0.5124

@@ -7,6 +7,7 @@ from queue import Queue
 import cv2
 import numpy as np
 import torch
+from ultralytics import YOLO
 
 from src.model_utils.baseline_model import FRAME_STEP, FRAMES_COUNT, CLASS_COUNT, ActionRecognition
 from src.model_utils.model_training import preprocess_frame, MODEL_OUTPUT, INPUT_FOLDER
@@ -26,23 +27,28 @@ class InferenceEngine:
     def __init__(self, frame_step, frames_limit, path):
         self.frame_step = frame_step
         self.frames_limit = frames_limit
-        self.buffer = deque(maxlen=self.frames_limit)  # Automatically maintain maxlen elements (deletes older element)
+        
+        self.buffers = {}       # separate buffer for each person (person_id -> deque)
+        self.frame_counts = {}  # different frame count for each person
+        self.yolo_model = YOLO('yolov8n.pt') # detection model to identify people in the video
+        
         self.lock = threading.Lock()
         self.stop_event = threading.Event()
 
-        self.frame_count = 0
         self.predictions = []
         self.final = None
         self.queue = Queue()  # Thread-safe FIFO
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+        
         model_loaded = ActionRecognition(num_classes=CLASS_COUNT, backbone_type='resnet18')
         model_loaded.load_state_dict(torch.load(MODEL_OUTPUT))
         model_loaded.to(self.device)
         model_loaded.eval()
 
-        self.model = model_loaded
+        self.model = model_loaded 
+
         self.path = path
 
         classes = sorted(os.listdir(INPUT_FOLDER))  # Reads class names from directory structure.
@@ -56,13 +62,13 @@ class InferenceEngine:
                 - Copies current buffer (sliding window)
                 - Runs model prediction
         """
-        i = 0
         while not self.stop_event.is_set() or not self.queue.empty():
             try:
-                window = self.queue.get(timeout=1)
+                track_id, window = self.queue.get(timeout=1)
             except:
                 continue
 
+            
             # Convert to PyTorch tensor: (B, T, H, W, C) -> (B, C, T, H, W)
             tensor = torch.tensor(np.expand_dims(window, axis=0))  # (1, T, H, W, C)
             tensor = tensor.permute(0, 4, 1, 2, 3).to(self.device)
@@ -72,13 +78,14 @@ class InferenceEngine:
                 _, pred = torch.max(output, 1)
 
             self.predictions.append(pred.item())
-            pred_label = self.idx_to_class[pred.item()]
-            print(f"Predicted class ({i}): {pred_label}")
-            i = i + 1
+            pred_label = self.idx_to_class[pred.item()] 
+            
+            print(f"Person ID: {int(track_id)} | Action: {pred_label}") 
 
-        self.final = Counter(self.predictions).most_common(1)[0][0]
-        print("=" * 45)
-        print(f"Final prediction: {self.idx_to_class[self.final]}")
+        if self.predictions:
+            self.final = Counter(self.predictions).most_common(1)[0][0]
+            print("=" * 45)
+            print(f"Final prediction (most frequent): {self.idx_to_class[self.final]}")
 
     def perform_using_sliding_window(self):
         """
@@ -92,24 +99,44 @@ class InferenceEngine:
         inference_thread.start()
 
         cap = cv2.VideoCapture(self.path)
-        frame_index = 0
 
         while cap.isOpened():
             ret, frame = cap.read()
             if not ret:
                 break
 
-            frame = preprocess_frame(frame)
+            # 1. YOLO searches for people in the current frame and assigns track IDs
+            results = self.yolo_model.track(frame, persist=True, tracker="bytetrack.yaml", verbose=False)
+            
+            # Check if any people were detected in the frame
+            if results[0].boxes is None or results[0].boxes.id is None:
+                continue
 
-            with self.lock:
-                self.buffer.append(frame)
-
-            frame_index += 1
-
-            if frame_index % self.frame_step == 0 and len(self.buffer) == self.frames_limit:
+            boxes = results[0].boxes.xyxy.cpu().numpy()
+            track_ids = results[0].boxes.id.cpu().numpy()
+            
+            for box, track_id in zip(boxes, track_ids):
+                x1, y1, x2, y2 = map(int, box)
+                
+                # 2. Extract the specific person from the frame using the bounding box coords
+                person_crop = frame[y1:y2, x1:x2]
+                if person_crop.size == 0:
+                    continue
+                    
+                processed_crop = preprocess_frame(person_crop)
+                
                 with self.lock:
-                    window = np.array(list(self.buffer), dtype=np.float32)
-                self.queue.put(window)
+                    if track_id not in self.buffers:
+                        self.buffers[track_id] = deque(maxlen=self.frames_limit)
+                        self.frame_counts[track_id] = 0
+                        
+                    self.buffers[track_id].append(processed_crop)
+                    self.frame_counts[track_id] += 1
+
+                    # 4. If we have collected a batch for a specific person, send it for classification
+                    if self.frame_counts[track_id] % self.frame_step == 0 and len(self.buffers[track_id]) == self.frames_limit:
+                        window = np.array(list(self.buffers[track_id]), dtype=np.float32)
+                        self.queue.put((track_id, window))
 
         cap.release()
         self.stop_event.set()

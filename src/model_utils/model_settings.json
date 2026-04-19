@@ -4,6 +4,6 @@
   "FRAMES_COUNT": 10,
   "FRAME_STEP": 5,
   "BATCH_SIZE": 4,
-  "EPOCHS": 10
+  "EPOCHS": 5
 }
 

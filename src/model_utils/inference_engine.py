@@ -30,6 +30,7 @@ class InferenceEngine:
         
         self.buffers = {}       # separate buffer for each person (person_id -> deque)
         self.frame_counts = {}  # different frame count for each person
+        self.last_seen = {}     # GC: stores the last frame index a person was seen (person_id -> frame_index)
         self.yolo_model = YOLO('yolov8n.pt') # detection model to identify people in the video
         
         self.lock = threading.Lock()
@@ -41,7 +42,6 @@ class InferenceEngine:
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        
         model_loaded = ActionRecognition(num_classes=CLASS_COUNT, backbone_type='resnet18')
         model_loaded.load_state_dict(torch.load(MODEL_OUTPUT))
         model_loaded.to(self.device)
@@ -68,7 +68,6 @@ class InferenceEngine:
             except:
                 continue
 
-            
             # Convert to PyTorch tensor: (B, T, H, W, C) -> (B, C, T, H, W)
             tensor = torch.tensor(np.expand_dims(window, axis=0))  # (1, T, H, W, C)
             tensor = tensor.permute(0, 4, 1, 2, 3).to(self.device)
@@ -99,11 +98,14 @@ class InferenceEngine:
         inference_thread.start()
 
         cap = cv2.VideoCapture(self.path)
+        frame_index = 0 # GC: Counter to keep track of the current frame number
 
         while cap.isOpened():
             ret, frame = cap.read()
             if not ret:
                 break
+                
+            frame_index += 1 # GC: Increment frame counter
 
             # 1. YOLO searches for people in the current frame and assigns track IDs
             results = self.yolo_model.track(frame, persist=True, tracker="bytetrack.yaml", verbose=False)
@@ -132,11 +134,20 @@ class InferenceEngine:
                         
                     self.buffers[track_id].append(processed_crop)
                     self.frame_counts[track_id] += 1
+                    self.last_seen[track_id] = frame_index # GC: Update the last seen frame
 
                     # 4. If we have collected a batch for a specific person, send it for classification
                     if self.frame_counts[track_id] % self.frame_step == 0 and len(self.buffers[track_id]) == self.frames_limit:
                         window = np.array(list(self.buffers[track_id]), dtype=np.float32)
                         self.queue.put((track_id, window))
+                        
+            # GC: Clean up old tracks (persons not seen for more than 30 frames)
+            with self.lock:
+                stale_ids = [tid for tid, last_seen_frame in self.last_seen.items() if frame_index - last_seen_frame > 30]
+                for tid in stale_ids:
+                    del self.buffers[tid]
+                    del self.frame_counts[tid]
+                    del self.last_seen[tid]
 
         cap.release()
         self.stop_event.set()

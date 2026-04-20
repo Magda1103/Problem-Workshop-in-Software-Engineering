@@ -66,3 +66,41 @@ Example for `frames_limit=16` and `frame_step=5`: `[f0..f15], [f5..f20], [f10..f
   - Scaled to `[0,1]`.  
 - Converted to 5D tensor `(Batch, Channels, Frames, Height, Width)` for the model.
 
+
+----------------------------------------------------------------------------
+
+## Task 3 - Fine-Tuning and Data Pipeline Optimization
+
+This task adapts the baseline model to focus on high-priority security events and optimizes the data loading process to prevent memory exhaustion during training.
+
+### Fine-Tuning Strategy
+- **Class Reduction:** The model was fine-tuned specifically on 4 target classes (`person_steals_object`, `person_enters_car`, `person_rides_bicycle`, `person_picks_up_object`) to improve accuracy for critical security events.
+- **Performance Tracking:** Implemented automated logging of training and validation metrics (`train_loss`, `train_acc`, `val_acc`) to a JSON file per epoch to track model convergence and prevent overfitting.
+
+### Memory Optimization (RAM Bottleneck Fix)
+- Addressed severe `ArrayMemoryError` crashes caused by loading entire videos into memory during the clip extraction phase.
+- **Single Clip Extraction:** Modified the `VideoDataset` to extract only *one* random `frames_limit` clip directly from the video stream using OpenCV, discarding the remaining frames immediately.
+- **Dataset Sampling:** Implemented dynamic subset sampling to train on a manageable, randomized portion of the dataset per epoch. This drastically reduces the memory footprint while maintaining data variance.
+
+## Task 4 - Inference Engine Enhancements & Milestone CLI
+
+This phase upgrades the `InferenceEngine` to support multi-object tracking, stabilizes predictions, and fulfills the Sprint milestone by generating a structured data contract.
+
+### Multi-Object Tracking & Memory Management
+- **YOLOv8 Integration:** Integrated a YOLOv8 nano model (`yolov8n.pt`) to detect and track individuals dynamically. The inference engine now tracks specific IDs rather than processing the entire global frame blindly.
+- **Garbage Collection:** Implemented a cleanup routine to prevent infinite memory leaks during long video streams. The system monitors the `last_seen` frame for each `track_id` and automatically purges buffers, frame counters, and history queues for any ID inactive for more than 30 frames.
+
+### Temporal Smoothing & Confidence Scoring
+- **Majority Vote Buffer:** Created an `action_history` queue that stores the last 5 predictions for each tracked individual. The final output is determined by the most common prediction in this buffer, effectively eliminating UI flickering caused by single-frame misclassifications.
+- **Softmax Probabilities:** Converted raw model logits into human-readable percentage confidence scores using `torch.nn.functional.softmax` to provide accurate uncertainty metrics to the downstream API.
+
+### Milestone Delivery
+- **JSON Data Logging:** The CLI tool now automatically exports a structured `inference_results.json` log upon completion. This file serves as the data contract for downstream GUI/API development, containing `video_source`, `track_id`, `final_action`, and `confidence_score`.
+
+#### Important note on Data Pipeline
+The baseline model was trained on **global context** (full frames with backgrounds) and the Inference Engine currently processes full frames as well
+
+### Automated Environment Setup
+
+To maintain developer experience and prevent Git repository bloat from large model weights and video datasets, an automated setup protocol was established.
+- **`setup_data.py`:** A custom Python script utilizing `gdown` to automatically fetch the `.pth` model weights and sample video structures directly from cloud storage, extracting them seamlessly into the correct local directories.

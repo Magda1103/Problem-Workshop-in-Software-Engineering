@@ -1,0 +1,14 @@
+[
+    {
+        "video_source": "20200510_1143475917583663114820442_0.mp4",
+        "track_id": 5,
+        "final_action": "person_picks_up_object",
+        "confidence_score": "44.42%"
+    },
+    {
+        "video_source": "20200510_1143475917583663114820442_0.mp4",
+        "track_id": 7,
+        "final_action": "person_picks_up_object",
+        "confidence_score": "54.85%"
+    }
+]

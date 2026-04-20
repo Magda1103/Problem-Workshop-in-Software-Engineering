@@ -3,4 +3,8 @@ data/
 *.tar.gz
 .idea
 __pycache__
+
+*.pth
+*.pt
+
 .coverage

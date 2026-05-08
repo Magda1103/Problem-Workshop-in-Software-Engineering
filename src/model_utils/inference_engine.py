@@ -188,21 +188,31 @@ class InferenceEngine:
         self.save_json_results()
 
     def save_json_results(self):
-        """
-        Saves detected actions to a JSON file as per Milestone requirements.
-        """
-        final_report = []
+        log_path = BASE_DIR / 'src' / 'model_utils' / 'inference_results.json'
+
+        new_results = []
         for tid, action in self.latest_predictions.items():
-            final_report.append({
+            new_results.append({
                 "video_source": str(self.path.name),
                 "track_id": int(tid),
                 "final_action": action,
                 "confidence_score": f"{self.latest_confidences.get(tid, 0)}%"
             })
 
-        log_path = BASE_DIR / 'src' / 'model_utils' /'inference_results.json'
+        if log_path.exists():
+            try:
+                with open(log_path, 'r') as f:
+                    data = json.load(f)
+            except:
+                data = []
+        else:
+            data = []
+
+        data.extend(new_results)
+
         with open(log_path, 'w') as f:
-            json.dump(final_report, f, indent=4)
+            json.dump(data, f, indent=4)
+
         print(f"\nResults saved to {log_path}")
 
 def get_random_video(base_dir):

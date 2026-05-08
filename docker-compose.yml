@@ -1,37 +1,11 @@
 services:
-  ai_engine:
+  api:
     build: .
-    container_name: pip_ai_system
-    volumes:
-      - ./src:/app/src
-      - ./data:/app/data
-    environment:
-      - PYTHONUNBUFFERED=1
-      - ENV=development
-    command: python src/data_pipeline.py
-    tty: true
-    stdin_open: true
-
-  training:
-    build: .
-    container_name: pip_training
+    container_name: pip_api
     volumes:
       - ./src:/app/src
       - ./data:/app/data
       - ./models:/app/models
-    environment:
-      - PYTHONUNBUFFERED=1
-    command: python -m src.model_utils.model_training
-
-  inference_engine:
-    build: .
-    container_name: pip_inference_engine
-    volumes:
-      - ./src:/app/src
-      - ./data:/app/data
-      - ./models:/app/models
-    environment:
-      - PYTHONUNBUFFERED=1
-    command: python -m src.model_utils.inference_engine
-
-
+    command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"

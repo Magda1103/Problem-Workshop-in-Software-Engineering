@@ -6,7 +6,7 @@ import argparse
 from collections import deque, Counter
 from pathlib import Path
 from queue import Queue
-
+from src.model_utils.alert_logic import AlertLogic
 import cv2
 import numpy as np
 import torch
@@ -36,6 +36,9 @@ class InferenceEngine:
         self.latest_confidences = {}
         self.action_history = {} 
         self.history_length = 5
+
+        self.alert_logic = AlertLogic()
+        self.latest_alerts = {}
         
         # Use GPU if available to prevent CPU bottlenecks
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -103,6 +106,9 @@ class InferenceEngine:
                 most_common_action = Counter(self.action_history[track_id]).most_common(1)[0][0]
                 self.latest_predictions[track_id] = most_common_action
                 self.latest_confidences[track_id] = conf_percentage
+
+                alert = self.alert_logic.update(track_id, most_common_action)
+                self.latest_alerts[track_id] = alert
             
             self.queue.task_done()
 
@@ -158,11 +164,17 @@ class InferenceEngine:
                     with self.lock:
                         current_action = self.latest_predictions.get(track_id, "Analyzing...")
                         conf = self.latest_confidences.get(track_id, 0)
-                    
+                        alert_state = self.latest_alerts.get(track_id, {}).get("current_alert_state", "SAFE")
+
+                    color = (0, 255, 0)
+                    if alert_state == "WARNING":
+                        color = (0, 255, 255)
+                    elif alert_state == "DANGER":
+                        color = (0, 0, 255)
                     # Visualization
-                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                    cv2.putText(frame, f"ID:{int(track_id)} {current_action}", (x1, y1-10), 
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+                    cv2.putText(frame, f"ID:{int(track_id)} {current_action} [{alert_state}]", (x1, y1-10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
             # Garbage Collector: Prevent Memory Leaks by removing stale IDs (30 frames inactivity)
             with self.lock:
@@ -174,6 +186,9 @@ class InferenceEngine:
                     self.latest_predictions.pop(tid, None)
                     self.action_history.pop(tid, None)
                     self.latest_confidences.pop(tid, None)
+
+                    self.latest_alerts.pop(tid, None)
+                    self.alert_logic.remove_track(tid)
 
             cv2.imshow("Fine-Tuned Model", frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -188,21 +203,38 @@ class InferenceEngine:
         self.save_json_results()
 
     def save_json_results(self):
-        """
-        Saves detected actions to a JSON file as per Milestone requirements.
-        """
-        final_report = []
+        log_path = BASE_DIR / 'src' / 'model_utils' / 'inference_results.json'
+
+        new_results = []
+
         for tid, action in self.latest_predictions.items():
-            final_report.append({
+            alert = self.latest_alerts.get(tid, {})
+            new_results.append({
                 "video_source": str(self.path.name),
                 "track_id": int(tid),
                 "final_action": action,
-                "confidence_score": f"{self.latest_confidences.get(tid, 0)}%"
+                "confidence_score": f"{self.latest_confidences.get(tid, 0)}%",
+                "current_alert_state": alert.get("current_alert_state", "SAFE"),
+                "max_alert_state": alert.get("max_alert_state", "SAFE"),
+                "anomaly_counter": alert.get("anomaly_counter", 0),
+                "danger_count": alert.get("danger_count", 0),
+                "warning_count": alert.get("warning_count", 0)
             })
 
-        log_path = BASE_DIR / 'src' / 'model_utils' /'inference_results.json'
+        if log_path.exists():
+            try:
+                with open(log_path, 'r') as f:
+                    data = json.load(f)
+            except:
+                data = []
+        else:
+            data = []
+
+        data.extend(new_results)
+
         with open(log_path, 'w') as f:
-            json.dump(final_report, f, indent=4)
+            json.dump(data, f, indent=4)
+
         print(f"\nResults saved to {log_path}")
 
 def get_random_video(base_dir):

@@ -104,3 +104,42 @@ The baseline model was trained on **global context** (full frames with backgroun
 
 To maintain developer experience and prevent Git repository bloat from large model weights and video datasets, an automated setup protocol was established.
 - **`setup_data.py`:** A custom Python script utilizing `gdown` to automatically fetch the `.pth` model weights and sample video structures directly from cloud storage, extracting them seamlessly into the correct local directories.
+
+
+## Task 5 - FastAPI
+
+Implemented a simple FastAPI backend for accessing inference results.
+
+### API Endpoints
+
+- `GET /status`
+- `GET /detections/latest`
+- `GET /detections/history`
+- `WebSocket /ws/detections`
+
+### Key Features
+
+- Real-time detection updates using WebSockets
+- Reads detection results from `inference_results.json`
+- Support for future dashboard integration
+
+## Task 6 - Alert Logic System
+
+Implemented a simple alert system for anomaly actions.
+
+### Alert States
+
+- `SAFE`
+- `WARNING`
+- `DANGER`
+
+### Alert Logic
+
+- Tracks actions for each detected person using `track_id`
+- Increases anomaly counter for dangerous actions
+- Resets counter when anomaly disappears
+- Changes alert state after exceeding threshold
+
+### Current Anomaly Class
+
+- `person_steals_object`

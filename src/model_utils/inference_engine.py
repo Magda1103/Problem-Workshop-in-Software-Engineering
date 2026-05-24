@@ -39,12 +39,23 @@ class InferenceEngine:
 
         self.alert_logic = AlertLogic()
         self.latest_alerts = {}
+
+        self.scene_objects_top_k = 5
+        self.scene_analysis_step = 5
+        self.scene_object_counts = Counter()
+        self.people_seen = set()
         
         # Use GPU if available to prevent CPU bottlenecks
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
         # Load YOLO for person tracking
         self.yolo_model = YOLO('yolov8n.pt') 
+
+        try:
+            all_classes = list(self.yolo_model.names.keys())
+        except Exception:
+            all_classes = []
+        self.scene_object_classes = [cid for cid in all_classes if int(cid) != 0]
         
         self.lock = threading.Lock()
         self.stop_event = threading.Event()
@@ -69,6 +80,37 @@ class InferenceEngine:
         model_loaded.to(self.device)
         model_loaded.eval()
         self.model = model_loaded
+
+    def _guess_environment(self, object_counts):
+        indoor = {
+            "chair", "couch", "tv", "laptop", "keyboard", "mouse",
+            "dining table", "sink", "bed", "refrigerator", "microwave",
+            "oven", "toilet"
+        }
+        outdoor = {
+            "car", "bicycle", "motorcycle", "bus", "truck", "traffic light",
+            "fire hydrant", "stop sign", "bench", "skateboard", "tree",
+            "building", "road", "sidewalk", "parking meter"
+        }
+
+        indoor_score = sum(object_counts.get(obj, 0) for obj in indoor)
+        outdoor_score = sum(object_counts.get(obj, 0) for obj in outdoor)
+
+        if indoor_score == 0 and outdoor_score == 0:
+            return "unknown"
+        if indoor_score >= outdoor_score * 1.2:
+            return "indoors"
+        if outdoor_score >= indoor_score * 1.2:
+            return "outdoors"
+        return "unknown"
+
+    def _update_scene_objects(self, detections):
+        if detections and detections[0].boxes is not None:
+            classes = detections[0].boxes.cls.cpu().numpy().astype(int)
+            names = self.yolo_model.names
+            for cls_id in classes:
+                name = names.get(int(cls_id), str(int(cls_id)))
+                self.scene_object_counts[name] += 1
 
     def run_inference(self):
         """
@@ -134,6 +176,15 @@ class InferenceEngine:
 
             # Track persons only
             results = self.yolo_model.track(frame, persist=True, verbose=False, classes=[0], conf=0.5)
+
+            if frame_index % self.scene_analysis_step == 0:
+                scene_detections = self.yolo_model(
+                    frame,
+                    verbose=False,
+                    conf=0.25,
+                    classes=self.scene_object_classes if self.scene_object_classes else None
+                )
+                self._update_scene_objects(scene_detections)
             
             if results[0].boxes is not None and results[0].boxes.id is not None:
                 boxes = results[0].boxes.xyxy.cpu().numpy()
@@ -142,6 +193,8 @@ class InferenceEngine:
                 for box, track_id in zip(boxes, track_ids):
                     x1, y1, x2, y2 = map(int, box)
                     person_crop = frame[y1:y2, x1:x2]
+
+                    self.people_seen.add(int(track_id))
                     
                     if person_crop.size > 0:
                         processed_crop = preprocess_frame(frame) # Preprocess the entire frame for better context, can be changed to person_crop if needed.
@@ -207,6 +260,24 @@ class InferenceEngine:
 
         new_results = []
 
+        object_counts = self.scene_object_counts.copy()
+        object_counts.pop("person", None)
+        top_objects = [name for name, _ in object_counts.most_common(self.scene_objects_top_k)]
+
+        environment_guess = self._guess_environment(object_counts)
+        people_seen_total = len(self.people_seen)
+
+        scene_summary = f"Environment: {environment_guess}, people seen: {people_seen_total}"
+        if top_objects:
+            scene_summary = f"{scene_summary}, surroundings: {', '.join(top_objects)}"
+
+        scene_payload = {
+            "objects": top_objects,
+            "env_guess": environment_guess,
+            "people_seen": people_seen_total,
+            "scene_summ": scene_summary
+        }
+
         for tid, action in self.latest_predictions.items():
             alert = self.latest_alerts.get(tid, {})
             new_results.append({
@@ -218,7 +289,8 @@ class InferenceEngine:
                 "max_alert_state": alert.get("max_alert_state", "SAFE"),
                 "anomaly_counter": alert.get("anomaly_counter", 0),
                 "danger_count": alert.get("danger_count", 0),
-                "warning_count": alert.get("warning_count", 0)
+                "warning_count": alert.get("warning_count", 0),
+                "scene": scene_payload
             })
 
         if log_path.exists():

@@ -7,6 +7,7 @@ import json
 import asyncio
 import os
 from pathlib import Path
+import time
 
 from src.model_utils.inference_engine import InferenceEngine
 from src.model_utils.baseline_model import FRAME_STEP, FRAMES_COUNT
@@ -15,6 +16,7 @@ from src.model_utils.baseline_model import FRAME_STEP, FRAMES_COUNT
 app = FastAPI()
 UPLOAD_DIR = "data/uploaded_videos"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+CURRENT_ENGINE = None
 
 # Path to inference results file
 FILE = "src/model_utils/inference_results.json"
@@ -63,18 +65,28 @@ async def ws(websocket: WebSocket):
         await websocket.send_json(data)
         await asyncio.sleep(1)
 
+
 def run_ai_analysis(video_path_str: str):
     """
     Background task to initialize and run the InferenceEngine for the uploaded file.
     """
+    global CURRENT_ENGINE
+
+    if CURRENT_ENGINE is not None:
+        print("Stopping previous AI analysis...")
+        CURRENT_ENGINE.stop_event.set()
+        time.sleep(1)
+
     inference_engine.LATEST_FRAME = None  # Clear the previous frame buffer
     print(f"Starting AI analysis for file: {video_path_str}")
     video_path = Path(video_path_str)
 
     # Initialize the engine with configured settings
-    engine = InferenceEngine(frame_step=FRAME_STEP, frames_limit=FRAMES_COUNT, video_path=video_path)
-    engine.perform_inference()
+    CURRENT_ENGINE = InferenceEngine(frame_step=FRAME_STEP, frames_limit=FRAMES_COUNT, video_path=video_path)
+    CURRENT_ENGINE.perform_inference()
+
     print(f"Finished AI analysis for file: {video_path_str}")
+    CURRENT_ENGINE = None
 
 
 async def frame_generator():
@@ -97,10 +109,11 @@ async def video_feed():
 async def upload_video(file: UploadFile = File(...), background_tasks: BackgroundTasks = BackgroundTasks()):
     file_path = os.path.join(UPLOAD_DIR, file.filename)
 
-
+    # Save the file to disk
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
+    # Dispatch the background task
     background_tasks.add_task(run_ai_analysis, file_path)
 
     return {
@@ -109,7 +122,6 @@ async def upload_video(file: UploadFile = File(...), background_tasks: Backgroun
     }
 
 
-# Mount directory for serving uploaded videos
 app.mount("/videos", StaticFiles(directory=UPLOAD_DIR), name="videos")
 
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")

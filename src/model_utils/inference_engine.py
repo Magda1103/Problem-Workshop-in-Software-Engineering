@@ -170,6 +170,8 @@ class InferenceEngine:
         print(f"Processing: {self.path.name}")
 
         while cap.isOpened():
+            if self.stop_event.is_set():
+                break
             ret, frame = cap.read()
             if not ret:
                 break

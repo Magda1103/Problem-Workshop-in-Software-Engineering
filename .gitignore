@@ -4,7 +4,6 @@ data/
 .idea
 __pycache__
 
-*.pth
-*.pt
+
 
 .coverage

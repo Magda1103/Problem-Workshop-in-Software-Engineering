@@ -104,5 +104,120 @@
             "people_seen": 2,
             "scene_summ": "Environment: indoors, people seen: 2, surroundings: chair, laptop"
         }
+    },
+    {
+        "video_source": "0A2FF239-A76D-4A83-926C-1AEDDFED2BF0-10352-000009608CBCB282_0.mp4",
+        "track_id": 1,
+        "final_action": "person_rides_bicycle",
+        "confidence_score": "85.9%",
+        "current_alert_state": "SAFE",
+        "max_alert_state": "WARNING",
+        "anomaly_counter": 0,
+        "danger_count": 0,
+        "warning_count": 1,
+        "scene": {
+            "objects": [
+                "refrigerator"
+            ],
+            "env_guess": "indoors",
+            "people_seen": 3,
+            "scene_summ": "Environment: indoors, people seen: 3, surroundings: refrigerator"
+        }
+    },
+    {
+        "video_source": "0A2FF239-A76D-4A83-926C-1AEDDFED2BF0-10352-000009608CBCB282_0.mp4",
+        "track_id": 3,
+        "final_action": "person_rides_bicycle",
+        "confidence_score": "75.88%",
+        "current_alert_state": "SAFE",
+        "max_alert_state": "SAFE",
+        "anomaly_counter": 0,
+        "danger_count": 0,
+        "warning_count": 0,
+        "scene": {
+            "objects": [
+                "refrigerator"
+            ],
+            "env_guess": "indoors",
+            "people_seen": 3,
+            "scene_summ": "Environment: indoors, people seen: 3, surroundings: refrigerator"
+        }
+    },
+    {
+        "video_source": "0A2FF239-A76D-4A83-926C-1AEDDFED2BF0-10352-000009608CBCB282_0.mp4",
+        "track_id": 1,
+        "final_action": "person_rides_bicycle",
+        "confidence_score": "85.9%",
+        "current_alert_state": "SAFE",
+        "max_alert_state": "WARNING",
+        "anomaly_counter": 0,
+        "danger_count": 0,
+        "warning_count": 1,
+        "scene": {
+            "objects": [
+                "refrigerator"
+            ],
+            "env_guess": "indoors",
+            "people_seen": 3,
+            "scene_summ": "Environment: indoors, people seen: 3, surroundings: refrigerator"
+        }
+    },
+    {
+        "video_source": "0A2FF239-A76D-4A83-926C-1AEDDFED2BF0-10352-000009608CBCB282_0.mp4",
+        "track_id": 3,
+        "final_action": "person_rides_bicycle",
+        "confidence_score": "75.88%",
+        "current_alert_state": "SAFE",
+        "max_alert_state": "SAFE",
+        "anomaly_counter": 0,
+        "danger_count": 0,
+        "warning_count": 0,
+        "scene": {
+            "objects": [
+                "refrigerator"
+            ],
+            "env_guess": "indoors",
+            "people_seen": 3,
+            "scene_summ": "Environment: indoors, people seen: 3, surroundings: refrigerator"
+        }
+    },
+    {
+        "video_source": "00b85040-17a8-4e1f-803c-7748a269bc906672177941386186354_4.mp4",
+        "track_id": 3,
+        "final_action": "person_enters_car",
+        "confidence_score": "75.23%",
+        "current_alert_state": "SAFE",
+        "max_alert_state": "SAFE",
+        "anomaly_counter": 0,
+        "danger_count": 0,
+        "warning_count": 0,
+        "scene": {
+            "objects": [
+                "car"
+            ],
+            "env_guess": "outdoors",
+            "people_seen": 2,
+            "scene_summ": "Environment: outdoors, people seen: 2, surroundings: car"
+        }
+    },
+    {
+        "video_source": "00e62023-5014-4ec3-8c89-f425536d82ec3165994210084296583_0.mp4",
+        "track_id": 1,
+        "final_action": "person_enters_car",
+        "confidence_score": "94.71%",
+        "current_alert_state": "SAFE",
+        "max_alert_state": "SAFE",
+        "anomaly_counter": 0,
+        "danger_count": 0,
+        "warning_count": 0,
+        "scene": {
+            "objects": [
+                "car",
+                "truck"
+            ],
+            "env_guess": "outdoors",
+            "people_seen": 1,
+            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: car, truck"
+        }
     }
 ]

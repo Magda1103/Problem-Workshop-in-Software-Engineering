@@ -16,6 +16,8 @@ from ultralytics import YOLO
 from src.model_utils.baseline_model import FRAME_STEP, FRAMES_COUNT, ActionRecognition
 from src.model_utils.fine_tuning import preprocess_frame
 
+LATEST_FRAME = None
+
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 class InferenceEngine:
@@ -243,9 +245,10 @@ class InferenceEngine:
                     self.latest_alerts.pop(tid, None)
                     self.alert_logic.remove_track(tid)
 
-            cv2.imshow("Fine-Tuned Model", frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+            global LATEST_FRAME
+            ret, buffer = cv2.imencode('.jpg', frame)
+            if ret:
+                LATEST_FRAME = buffer.tobytes()
 
         cap.release()
         cv2.destroyAllWindows()

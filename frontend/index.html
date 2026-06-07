@@ -3,125 +3,387 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Video Inference</title>
+    <title>AI Video Inference Dashboard</title>
+
     <style>
-        body { font-family: sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; background: #f4f4f9; }
-        .upload-container { border: 2px dashed #ccc; padding: 40px; text-align: center; background: #fff; border-radius: 8px; margin-bottom: 20px; }
-        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 16px; margin-top: 10px; }
-        button:hover { background: #0056b3; }
-        video { width: 100%; border-radius: 8px; margin-top: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        #status { margin-top: 10px; font-weight: bold; color: #333; }
-
-        /* Styles for the results table */
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #007bff; color: white; }
-        .SAFE { color: green; font-weight: bold; }
-        .WARNING { color: orange; font-weight: bold; }
-        .DANGER { color: red; font-weight: bold; }
-    </style>
-</head>
-<body>
-
-    <h2>AI Video Detection Dashboard</h2>
-
-    <div class="upload-container">
-        <input type="file" id="fileInput" accept="video/mp4,video/x-m4v,video/*" />
-        <br>
-        <button onclick="uploadFile()">Upload and Analyze</button>
-        <div id="status"></div>
-    </div>
-
-    <img id="videoPlayer" style="display: none; width: 100%; border-radius: 8px; margin-top: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" />
-
-    <h3 style="margin-top: 30px;">Live Detection Results:</h3>
-    <table>
-        <thead>
-            <tr>
-                <th>File</th>
-                <th>Track ID</th>
-                <th>Action</th>
-                <th>Confidence</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody id="resultsTableBody">
-            <tr><td colspan="5" style="text-align: center;">No data available... Upload a file to start analysis.</td></tr>
-        </tbody>
-    </table>
-
-    <script>
-        // 1. File Upload Handler
-        async function uploadFile() {
-            const fileInput = document.getElementById('fileInput');
-            const statusDiv = document.getElementById('status');
-            const videoPlayer = document.getElementById('videoPlayer');
-
-            if (fileInput.files.length === 0) {
-                statusDiv.innerText = "Please select a video file before uploading.";
-                statusDiv.style.color = "red";
-                return;
-            }
-
-            const file = fileInput.files[0];
-            const formData = new FormData();
-            formData.append("file", file);
-
-            statusDiv.innerText = "Uploading file... please wait.";
-            statusDiv.style.color = "blue";
-
-            try {
-                const response = await fetch('/upload/', { method: 'POST', body: formData });
-                if (response.ok) {
-                    const data = await response.json();
-                    statusDiv.innerText = "Success! " + data.message;
-                    statusDiv.style.color = "green";
-
-                    // Attach the live video stream from FastAPI (adding a timestamp to bypass cache)
-                    videoPlayer.src = "/video_feed?" + new Date().getTime();
-                    videoPlayer.style.display = "block";
-                } else {
-                    statusDiv.innerText = "Error uploading file.";
-                    statusDiv.style.color = "red";
-                }
-            } catch (error) {
-                statusDiv.innerText = "A network error occurred.";
-                statusDiv.style.color = "red";
-            }
+        body {
+            font-family: sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f4f4f9;
         }
 
-        // 2. WebSocket Handler (Receiving live data)
-        const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-        const wsUrl = `${protocol}://${window.location.host}/ws/detections`;
-        const ws = new WebSocket(wsUrl);
+        .upload-container {
+            border: 2px dashed #ccc;
+            padding: 40px;
+            text-align: center;
+            background: #fff;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
 
-        ws.onmessage = function(event) {
-            const data = JSON.parse(event.data);
-            const tbody = document.getElementById('resultsTableBody');
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
 
-            if (data.length === 0) {
-                return; // Do not clear the table if the JSON file is empty in the current tick
-            }
+        button:hover {
+            background: #0056b3;
+        }
 
-            tbody.innerHTML = ""; // Clear the old table data
+        #status {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #333;
+        }
 
-            // Reverse the array so the latest results appear at the top (optional)
-            data.reverse().forEach(item => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${item.video_source}</td>
-                    <td>${item.track_id}</td>
-                    <td>${item.final_action}</td>
-                    <td>${item.confidence_score}</td>
-                    <td class="${item.current_alert_state}">${item.current_alert_state}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        };
+        #videoPlayer {
+            display: none;
+            width: 100%;
+            border-radius: 8px;
+            margin-top: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
 
-        ws.onclose = function() {
-            console.log("WebSocket connection closed.");
-        };
-    </script>
+        .dashboard {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            flex: 1;
+            min-width: 180px;
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .card h4 {
+            margin: 0;
+            color: #555;
+        }
+
+        .card p {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .panel {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: #fff;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .SAFE {
+            color: green;
+            font-weight: bold;
+        }
+
+        .WARNING {
+            color: orange;
+            font-weight: bold;
+        }
+
+        .DANGER {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+<h2>AI Video Detection Dashboard</h2>
+
+<div class="dashboard">
+
+    <div class="card">
+        <h4>People Seen</h4>
+        <p id="peopleSeen">0</p>
+    </div>
+
+    <div class="card">
+        <h4>Danger Alerts</h4>
+        <p id="dangerCount">0</p>
+    </div>
+
+    <div class="card">
+        <h4>Warning Alerts</h4>
+        <p id="warningCount">0</p>
+    </div>
+
+    <div class="card">
+        <h4>Environment</h4>
+        <p id="environment">Unknown</p>
+    </div>
+
+</div>
+
+<div class="upload-container">
+    <input type="file" id="fileInput" accept="video/mp4,video/x-m4v,video/*" />
+    <br>
+    <button onclick="uploadFile()">Upload and Analyze</button>
+    <div id="status"></div>
+</div>
+
+<img id="videoPlayer" />
+
+<div class="panel">
+    <h3>Latest Detection</h3>
+
+    <p><strong>Track ID:</strong> <span id="latestTrack">-</span></p>
+    <p><strong>Action:</strong> <span id="latestAction">-</span></p>
+    <p><strong>Confidence:</strong> <span id="latestConfidence">-</span></p>
+    <p><strong>Alert:</strong> <span id="latestAlert">-</span></p>
+</div>
+
+<div class="panel">
+    <h3>Scene Context</h3>
+
+    <p><strong>Environment:</strong> <span id="sceneEnv">-</span></p>
+    <p><strong>People Seen:</strong> <span id="scenePeople">-</span></p>
+    <p><strong>Objects:</strong> <span id="sceneObjects">-</span></p>
+</div>
+
+<h3 style="margin-top:30px;">Live Detection Results</h3>
+
+<table>
+    <thead>
+    <tr>
+        <th>File</th>
+        <th>Track ID</th>
+        <th>Action</th>
+        <th>Confidence</th>
+        <th>Status</th>
+        <th>Warnings</th>
+        <th>Dangers</th>
+        <th>Anomaly Counter</th>
+    </tr>
+    </thead>
+
+    <tbody id="resultsTableBody">
+    <tr>
+        <td colspan="8" style="text-align:center;">
+            No data available... Upload a file to start analysis.
+        </td>
+    </tr>
+    </tbody>
+</table>
+
+<script>
+
+async function uploadFile() {
+
+    const fileInput = document.getElementById('fileInput');
+    const statusDiv = document.getElementById('status');
+    const videoPlayer = document.getElementById('videoPlayer');
+
+    if (fileInput.files.length === 0) {
+        statusDiv.innerText = "Please select a video file before uploading.";
+        statusDiv.style.color = "red";
+        return;
+    }
+
+    const file = fileInput.files[0];
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    statusDiv.innerText = "Uploading file... please wait.";
+    statusDiv.style.color = "blue";
+
+    try {
+
+        const response = await fetch('/upload/', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (response.ok) {
+
+            const data = await response.json();
+
+            statusDiv.innerText =
+                "Success! " + data.message;
+
+            statusDiv.style.color = "green";
+
+            videoPlayer.src =
+                "/video_feed?" + new Date().getTime();
+
+            videoPlayer.style.display = "block";
+
+        } else {
+
+            statusDiv.innerText =
+                "Error uploading file.";
+
+            statusDiv.style.color = "red";
+        }
+
+    } catch (error) {
+
+        statusDiv.innerText =
+            "A network error occurred.";
+
+        statusDiv.style.color = "red";
+    }
+}
+
+const protocol =
+    window.location.protocol === "https:"
+        ? "wss"
+        : "ws";
+
+const wsUrl =
+    `${protocol}://${window.location.host}/ws/detections`;
+
+const ws = new WebSocket(wsUrl);
+
+ws.onmessage = function(event) {
+
+    const data = JSON.parse(event.data);
+
+    const tbody =
+        document.getElementById('resultsTableBody');
+
+    if (data.length === 0) {
+        return;
+    }
+
+    const currentTracks = {};
+
+    const currentVideo =
+    data[data.length - 1].video_source;
+
+    data
+        .filter(item => item.video_source === currentVideo)
+        .forEach(item => {
+            currentTracks[item.track_id] = item;
+        });
+
+    const activeTracks =
+        Object.values(currentTracks);
+
+    let dangerCount = 0;
+    let warningCount = 0;
+
+    activeTracks.forEach(track => {
+
+        if(track.current_alert_state === "DANGER")
+            dangerCount++;
+
+        if(track.current_alert_state === "WARNING")
+            warningCount++;
+    });
+
+    document.getElementById("dangerCount").innerText =
+        dangerCount;
+
+    document.getElementById("warningCount").innerText =
+        warningCount;
+
+   document.getElementById("peopleSeen").innerText =
+    activeTracks.length;
+
+if(activeTracks.length > 0){
+
+    const mostImportant =
+        activeTracks.find(t => t.current_alert_state === "DANGER")
+        || activeTracks.find(t => t.current_alert_state === "WARNING")
+        || activeTracks[0];
+
+            document.getElementById("environment").innerText =
+                mostImportant.scene.env_guess;
+
+            document.getElementById("sceneEnv").innerText =
+                mostImportant.scene.env_guess;
+
+            document.getElementById("scenePeople").innerText =
+                activeTracks.length;
+
+            document.getElementById("sceneObjects").innerText =
+                [...new Set(
+                    activeTracks.flatMap(t => t.scene.objects)
+                )].join(", ");
+
+            document.getElementById("latestTrack").innerText =
+                activeTracks.map(t => t.track_id).join(", ");
+
+            document.getElementById("latestAction").innerText =
+                activeTracks.map(t => t.final_action).join(" | ");
+
+            document.getElementById("latestConfidence").innerText =
+                activeTracks.map(t => t.confidence_score).join(" | ");
+
+            document.getElementById("latestAlert").innerText =
+                activeTracks
+                    .map(t => `${t.track_id}:${t.current_alert_state}`)
+                    .join(" | ");
+        }
+
+    tbody.innerHTML = "";
+
+    [...data].reverse().forEach(item => {
+
+        const tr = document.createElement('tr');
+
+        tr.innerHTML = `
+            <td>${item.video_source}</td>
+            <td>${item.track_id}</td>
+            <td>${item.final_action}</td>
+            <td>${item.confidence_score}</td>
+
+            <td class="${item.current_alert_state}">
+                ${item.current_alert_state}
+            </td>
+
+            <td>${item.warning_count}</td>
+            <td>${item.danger_count}</td>
+            <td>${item.anomaly_counter}</td>
+        `;
+
+        tbody.appendChild(tr);
+    });
+};
+
+ws.onclose = function() {
+    console.log("WebSocket connection closed.");
+};
+
+</script>
+
 </body>
 </html>

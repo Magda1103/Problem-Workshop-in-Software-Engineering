@@ -72,6 +72,9 @@ def run_ai_analysis(video_path_str: str):
     """
     global CURRENT_ENGINE
 
+    with open(FILE, "w") as f:
+        json.dump([], f)
+
     if CURRENT_ENGINE is not None:
         print("Stopping previous AI analysis...")
         CURRENT_ENGINE.stop_event.set()

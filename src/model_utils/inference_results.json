@@ -1,85 +1,40 @@
 [
     {
-        "video_source": "00e62023-5014-4ec3-8c89-f425536d82ec3165994210084296583_2.mp4",
-        "track_id": 1,
-        "final_action": "person_enters_car",
-        "confidence_score": "84.33%",
-        "current_alert_state": "SAFE",
-        "max_alert_state": "SAFE",
-        "anomaly_counter": 0,
-        "danger_count": 0,
-        "warning_count": 0,
-        "scene": {
-            "objects": [
-                "car",
-                "truck"
-            ],
-            "env_guess": "outdoors",
-            "people_seen": 1,
-            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: car, truck"
-        }
-    },
-    {
-        "video_source": "0B43B172-BFD4-4892-A98C-A90C82DC8CD9_2.mp4",
-        "track_id": 2,
-        "final_action": "person_enters_car",
-        "confidence_score": "92.79%",
-        "current_alert_state": "SAFE",
-        "max_alert_state": "SAFE",
-        "anomaly_counter": 0,
-        "danger_count": 0,
-        "warning_count": 0,
-        "scene": {
-            "objects": [
-                "truck",
-                "car",
-                "bus"
-            ],
-            "env_guess": "outdoors",
-            "people_seen": 1,
-            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: truck, car, bus"
-        }
-    },
-    {
-        "video_source": "1AF00CB0-DC49-4DB6-9406-0B1E97F9B672-228-00000006108CB376_0.mp4",
+        "video_source": "0BEB79A2-6752-485D-A0B6-BF3508AFC04B_0.mp4",
         "track_id": 1,
         "final_action": "person_steals_object",
-        "confidence_score": "59.34%",
+        "confidence_score": "35.06%",
         "current_alert_state": "DANGER",
         "max_alert_state": "DANGER",
-        "anomaly_counter": 7,
+        "anomaly_counter": 26,
         "danger_count": 1,
         "warning_count": 1,
         "scene": {
             "objects": [
-                "chair",
-                "tv",
-                "refrigerator"
+                "bottle"
             ],
-            "env_guess": "indoors",
+            "env_guess": "unknown",
             "people_seen": 2,
-            "scene_summ": "Environment: indoors, people seen: 2, surroundings: chair, tv, refrigerator"
+            "scene_summ": "Environment: unknown, people seen: 2, surroundings: bottle"
         }
     },
     {
-        "video_source": "1AF00CB0-DC49-4DB6-9406-0B1E97F9B672-228-00000006108CB376_0.mp4",
+        "video_source": "0BEB79A2-6752-485D-A0B6-BF3508AFC04B_0.mp4",
         "track_id": 2,
         "final_action": "person_steals_object",
-        "confidence_score": "49.96%",
-        "current_alert_state": "WARNING",
-        "max_alert_state": "WARNING",
-        "anomaly_counter": 1,
-        "danger_count": 0,
+        "confidence_score": "37.34%",
+        "current_alert_state": "DANGER",
+        "max_alert_state": "DANGER",
+        "anomaly_counter": 23,
+        "danger_count": 1,
         "warning_count": 1,
         "scene": {
             "objects": [
-                "chair",
-                "tv",
-                "refrigerator"
+                "bottle"
             ],
-            "env_guess": "indoors",
+            "env_guess": "unknown",
             "people_seen": 2,
-            "scene_summ": "Environment: indoors, people seen: 2, surroundings: chair, tv, refrigerator"
+            "scene_summ": "Environment: unknown, people seen: 2, surroundings: bottle"
         }
     }
 ]

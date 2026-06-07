@@ -120,7 +120,7 @@ class InferenceEngine:
         """
         while not self.stop_event.is_set() or not self.queue.empty():
             try:
-                track_id, window = self.queue.get(timeout=1)
+                track_id, window, timestamp = self.queue.get(timeout=1)
             except:
                 continue
 
@@ -151,7 +151,11 @@ class InferenceEngine:
                 self.latest_predictions[track_id] = most_common_action
                 self.latest_confidences[track_id] = conf_percentage
 
-                alert = self.alert_logic.update(track_id, most_common_action)
+                alert = self.alert_logic.update(
+                    track_id,
+                    most_common_action,
+                    timestamp
+                )
                 self.latest_alerts[track_id] = alert
             
             self.queue.task_done()
@@ -176,7 +180,10 @@ class InferenceEngine:
             if not ret:
                 break
                 
-            frame_index += 1 
+            frame_index += 1
+
+            if frame_index % 30 == 0:
+                self.save_json_results()
 
             # Track persons only
             results = self.yolo_model.track(frame, persist=True, verbose=False, classes=[0], conf=0.5)
@@ -210,14 +217,14 @@ class InferenceEngine:
                                 
                             self.buffers[track_id].append(processed_crop)
                             self.frame_counts[track_id] += 1
-                            self.last_seen[track_id] = frame_index 
+                            self.last_seen[track_id] = frame_index
 
                             # Sliding window logic
                             if self.frame_counts[track_id] % self.frame_step == 0 and len(self.buffers[track_id]) == self.frames_limit:
                                 window = np.array(list(self.buffers[track_id]), dtype=np.float32)
                                 if not self.queue.full():
-                                    self.queue.put((track_id, window))
-                    
+                                    timestamp = frame_index / fps if fps > 0 else 0
+                                    self.queue.put((track_id, window, timestamp))
                     with self.lock:
                         current_action = self.latest_predictions.get(track_id, "Analyzing...")
                         conf = self.latest_confidences.get(track_id, 0)
@@ -313,6 +320,15 @@ class InferenceEngine:
             json.dump(data, f, indent=4)
 
         print(f"\nResults saved to {log_path}")
+
+        events_path = BASE_DIR / 'src' / 'model_utils' / 'alert_events.json'
+
+        with open(events_path, 'w') as f:
+            json.dump(
+                self.alert_logic.event_log,
+                f,
+                indent=4
+            )
 
 def get_random_video(base_dir):
     videos_dir = base_dir / 'data' / 'videos'

@@ -20,6 +20,7 @@ CURRENT_ENGINE = None
 
 # Path to inference results file
 FILE = "src/model_utils/inference_results.json"
+EVENTS_FILE = "src/model_utils/alert_events.json"
 
 @app.get("/status")
 def status():
@@ -44,6 +45,17 @@ def history():
     """
     try:
         return json.load(open(FILE))
+    except:
+        return []
+
+
+@app.get("/alert-events")
+def alert_events():
+    """
+    Returns alert state change history
+    """
+    try:
+        return json.load(open(EVENTS_FILE))
     except:
         return []
 

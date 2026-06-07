@@ -130,7 +130,7 @@
 <div class="dashboard">
 
     <div class="card">
-        <h4>People Seen</h4>
+        <h4>Tracked Persons</h4>
         <p id="peopleSeen">0</p>
     </div>
 
@@ -199,6 +199,27 @@
             No data available... Upload a file to start analysis.
         </td>
     </tr>
+    </tbody>
+</table>
+
+<h3 style="margin-top:30px;">Alert State Changes</h3>
+
+<table>
+    <thead>
+        <tr>
+            <th>Time (s)</th>
+            <th>Track ID</th>
+            <th>Action</th>
+            <th>Change</th>
+        </tr>
+    </thead>
+
+    <tbody id="eventsTableBody">
+        <tr>
+            <td colspan="4" style="text-align:center;">
+                No alert events yet.
+            </td>
+        </tr>
     </tbody>
 </table>
 
@@ -279,9 +300,25 @@ ws.onmessage = function(event) {
     const tbody =
         document.getElementById('resultsTableBody');
 
-    if (data.length === 0) {
-        return;
-    }
+   if (data.length === 0) {
+
+    document.getElementById("peopleSeen").innerText = "0";
+    document.getElementById("dangerCount").innerText = "0";
+    document.getElementById("warningCount").innerText = "0";
+
+    document.getElementById("environment").innerText = "-";
+
+    document.getElementById("latestTrack").innerText = "-";
+    document.getElementById("latestAction").innerText = "-";
+    document.getElementById("latestConfidence").innerText = "-";
+    document.getElementById("latestAlert").innerText = "-";
+
+    document.getElementById("sceneEnv").innerText = "-";
+    document.getElementById("scenePeople").innerText = "-";
+    document.getElementById("sceneObjects").innerText = "-";
+
+    return;
+}
 
     const currentTracks = {};
 
@@ -315,8 +352,7 @@ ws.onmessage = function(event) {
     document.getElementById("warningCount").innerText =
         warningCount;
 
-   document.getElementById("peopleSeen").innerText =
-    activeTracks.length;
+
 
 if(activeTracks.length > 0){
 
@@ -325,14 +361,18 @@ if(activeTracks.length > 0){
         || activeTracks.find(t => t.current_alert_state === "WARNING")
         || activeTracks[0];
 
+            document.getElementById("peopleSeen").innerText =
+                mostImportant.scene.people_seen;
+
             document.getElementById("environment").innerText =
                 mostImportant.scene.env_guess;
+
 
             document.getElementById("sceneEnv").innerText =
                 mostImportant.scene.env_guess;
 
             document.getElementById("scenePeople").innerText =
-                activeTracks.length;
+                mostImportant.scene.people_seen;
 
             document.getElementById("sceneObjects").innerText =
                 [...new Set(
@@ -379,9 +419,59 @@ if(activeTracks.length > 0){
     });
 };
 
+async function loadAlertEvents() {
+
+    try {
+
+        const response =
+            await fetch("/alert-events");
+
+        const events =
+            await response.json();
+
+        const tbody =
+            document.getElementById("eventsTableBody");
+
+        tbody.innerHTML = "";
+
+        if(events.length === 0){
+
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="4" style="text-align:center;">
+                No alert events
+            </td>
+        </tr>
+    `;
+
+    return;
+}
+
+        [...events].reverse().forEach(event => {
+
+            const tr = document.createElement("tr");
+
+            tr.innerHTML = `
+                <td>${event.time}</td>
+                <td>${event.track_id}</td>
+                <td>${event.action}</td>
+                <td>${event.from_state} → ${event.to_state}</td>
+            `;
+
+            tbody.appendChild(tr);
+        });
+
+    } catch(error) {
+        console.error("Error loading alert events:", error);
+    }
+}
+
 ws.onclose = function() {
     console.log("WebSocket connection closed.");
 };
+
+loadAlertEvents();
+setInterval(loadAlertEvents, 1000);
 
 </script>
 

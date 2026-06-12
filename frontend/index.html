@@ -52,12 +52,7 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
-        .dashboard {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-        }
+
 
         .card {
             flex: 1;
@@ -120,6 +115,36 @@
             color: red;
             font-weight: bold;
         }
+        .main-layout {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            margin-top: 20px;
+        }
+
+        .video-section {
+            flex: 2;
+        }
+
+        .info-section {
+            flex: 1;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        #videoPlayer {
+            display: none;
+            width: 100%;
+            min-height: 400px;
+            border-radius: 8px;
+            margin-top: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 
@@ -127,54 +152,81 @@
 
 <h2>AI Video Detection Dashboard</h2>
 
-<div class="dashboard">
+<div class="main-layout">
 
-    <div class="card">
-        <h4>Tracked Persons</h4>
-        <p id="peopleSeen">0</p>
+    <div class="video-section">
+
+        <div class="upload-container">
+            <input type="file" id="fileInput"
+                   accept="video/mp4,video/x-m4v,video/*" />
+            <br>
+            <button onclick="uploadFile()">
+                Upload and Analyze
+            </button>
+            <div id="status"></div>
+        </div>
+
+        <img id="videoPlayer" />
+
     </div>
 
-    <div class="card">
-        <h4>Danger Alerts</h4>
-        <p id="dangerCount">0</p>
+    <div class="info-section">
+
+        <div class="dashboard">
+
+            <div class="card">
+                <h4>Tracked Persons</h4>
+                <p id="peopleSeen">0</p>
+            </div>
+
+            <div class="card">
+                <h4>Danger Alerts</h4>
+                <p id="dangerCount">0</p>
+            </div>
+
+            <div class="card">
+                <h4>Warning Alerts</h4>
+                <p id="warningCount">0</p>
+            </div>
+
+            <div class="card">
+                <h4>Environment</h4>
+                <p id="environment">Unknown</p>
+            </div>
+
+        </div>
+
+        <div class="panel">
+            <h3>Latest Detection</h3>
+
+            <p><strong>Track ID:</strong>
+                <span id="latestTrack">-</span></p>
+
+            <p><strong>Action:</strong>
+                <span id="latestAction">-</span></p>
+
+            <p><strong>Confidence:</strong>
+                <span id="latestConfidence">-</span></p>
+
+            <p><strong>Alert:</strong>
+                <span id="latestAlert">-</span></p>
+        </div>
+
+        <div class="panel">
+            <h3>Scene Context</h3>
+
+            <p><strong>Environment:</strong>
+                <span id="sceneEnv">-</span></p>
+
+            <p><strong>People Seen:</strong>
+                <span id="scenePeople">-</span></p>
+
+            <p><strong>Objects:</strong>
+                <span id="sceneObjects">-</span></p>
+        </div>
+
     </div>
 
-    <div class="card">
-        <h4>Warning Alerts</h4>
-        <p id="warningCount">0</p>
-    </div>
-
-    <div class="card">
-        <h4>Environment</h4>
-        <p id="environment">Unknown</p>
-    </div>
-
-</div>
-
-<div class="upload-container">
-    <input type="file" id="fileInput" accept="video/mp4,video/x-m4v,video/*" />
-    <br>
-    <button onclick="uploadFile()">Upload and Analyze</button>
-    <div id="status"></div>
-</div>
-
-<img id="videoPlayer" />
-
-<div class="panel">
-    <h3>Latest Detection</h3>
-
-    <p><strong>Track ID:</strong> <span id="latestTrack">-</span></p>
-    <p><strong>Action:</strong> <span id="latestAction">-</span></p>
-    <p><strong>Confidence:</strong> <span id="latestConfidence">-</span></p>
-    <p><strong>Alert:</strong> <span id="latestAlert">-</span></p>
-</div>
-
-<div class="panel">
-    <h3>Scene Context</h3>
-
-    <p><strong>Environment:</strong> <span id="sceneEnv">-</span></p>
-    <p><strong>People Seen:</strong> <span id="scenePeople">-</span></p>
-    <p><strong>Objects:</strong> <span id="sceneObjects">-</span></p>
 </div>
 
 <h3 style="margin-top:30px;">Live Detection Results</h3>

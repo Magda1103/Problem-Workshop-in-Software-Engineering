@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Video Inference Dashboard</title>
+
+    <style>
+        body {
+            font-family: sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f4f4f9;
+        }
+
+        .upload-container {
+            border: 2px dashed #ccc;
+            padding: 40px;
+            text-align: center;
+            background: #fff;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        #status {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        #videoPlayer {
+            display: none;
+            width: 100%;
+            border-radius: 8px;
+            margin-top: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+
+
+        .card {
+            flex: 1;
+            min-width: 180px;
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .card h4 {
+            margin: 0;
+            color: #555;
+        }
+
+        .card p {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .panel {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: #fff;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .SAFE {
+            color: green;
+            font-weight: bold;
+        }
+
+        .WARNING {
+            color: orange;
+            font-weight: bold;
+        }
+
+        .DANGER {
+            color: red;
+            font-weight: bold;
+        }
+        .main-layout {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            margin-top: 20px;
+        }
+
+        .video-section {
+            flex: 2;
+        }
+
+        .info-section {
+            flex: 1;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        #videoPlayer {
+            display: none;
+            width: 100%;
+            min-height: 400px;
+            border-radius: 8px;
+            margin-top: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+
+<body>
+
+<h2>AI Video Detection Dashboard</h2>
+
+<div class="main-layout">
+
+    <div class="video-section">
+
+        <div class="upload-container">
+            <input type="file" id="fileInput"
+                   accept="video/mp4,video/x-m4v,video/*" />
+            <br>
+            <button onclick="uploadFile()">
+                Upload and Analyze
+            </button>
+            <div id="status"></div>
+        </div>
+
+        <img id="videoPlayer" />
+
+    </div>
+
+    <div class="info-section">
+
+        <div class="dashboard">
+
+            <div class="card">
+                <h4>Tracked Persons</h4>
+                <p id="peopleSeen">0</p>
+            </div>
+
+            <div class="card">
+                <h4>Danger Alerts</h4>
+                <p id="dangerCount">0</p>
+            </div>
+
+            <div class="card">
+                <h4>Warning Alerts</h4>
+                <p id="warningCount">0</p>
+            </div>
+
+            <div class="card">
+                <h4>Environment</h4>
+                <p id="environment">Unknown</p>
+            </div>
+
+        </div>
+
+        <div class="panel">
+            <h3>Latest Detection</h3>
+
+            <p><strong>Track ID:</strong>
+                <span id="latestTrack">-</span></p>
+
+            <p><strong>Action:</strong>
+                <span id="latestAction">-</span></p>
+
+            <p><strong>Confidence:</strong>
+                <span id="latestConfidence">-</span></p>
+
+            <p><strong>Alert:</strong>
+                <span id="latestAlert">-</span></p>
+        </div>
+
+        <div class="panel">
+            <h3>Scene Context</h3>
+
+            <p><strong>Environment:</strong>
+                <span id="sceneEnv">-</span></p>
+
+            <p><strong>People Seen:</strong>
+                <span id="scenePeople">-</span></p>
+
+            <p><strong>Objects:</strong>
+                <span id="sceneObjects">-</span></p>
+        </div>
+
+    </div>
+
+</div>
+
+<h3 style="margin-top:30px;">Live Detection Results</h3>
+
+<table>
+    <thead>
+    <tr>
+        <th>File</th>
+        <th>Track ID</th>
+        <th>Action</th>
+        <th>Confidence</th>
+        <th>Status</th>
+        <th>Warnings</th>
+        <th>Dangers</th>
+        <th>Anomaly Counter</th>
+    </tr>
+    </thead>
+
+    <tbody id="resultsTableBody">
+    <tr>
+        <td colspan="8" style="text-align:center;">
+            No data available... Upload a file to start analysis.
+        </td>
+    </tr>
+    </tbody>
+</table>
+
+<h3 style="margin-top:30px;">Alert State Changes</h3>
+
+<table>
+    <thead>
+        <tr>
+            <th>Time (s)</th>
+            <th>Track ID</th>
+            <th>Action</th>
+            <th>Change</th>
+        </tr>
+    </thead>
+
+    <tbody id="eventsTableBody">
+        <tr>
+            <td colspan="4" style="text-align:center;">
+                No alert events yet.
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<script>
+
+async function uploadFile() {
+
+    const fileInput = document.getElementById('fileInput');
+    const statusDiv = document.getElementById('status');
+    const videoPlayer = document.getElementById('videoPlayer');
+
+    if (fileInput.files.length === 0) {
+        statusDiv.innerText = "Please select a video file before uploading.";
+        statusDiv.style.color = "red";
+        return;
+    }
+
+    const file = fileInput.files[0];
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    statusDiv.innerText = "Uploading file... please wait.";
+    statusDiv.style.color = "blue";
+
+    try {
+
+        const response = await fetch('/upload/', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (response.ok) {
+
+            const data = await response.json();
+
+            statusDiv.innerText =
+                "Success! " + data.message;
+
+            statusDiv.style.color = "green";
+
+            videoPlayer.src =
+                "/video_feed?" + new Date().getTime();
+
+            videoPlayer.style.display = "block";
+
+        } else {
+
+            statusDiv.innerText =
+                "Error uploading file.";
+
+            statusDiv.style.color = "red";
+        }
+
+    } catch (error) {
+
+        statusDiv.innerText =
+            "A network error occurred.";
+
+        statusDiv.style.color = "red";
+    }
+}
+
+const protocol =
+    window.location.protocol === "https:"
+        ? "wss"
+        : "ws";
+
+const wsUrl =
+    `${protocol}://${window.location.host}/ws/detections`;
+
+const ws = new WebSocket(wsUrl);
+
+ws.onmessage = function(event) {
+
+    const data = JSON.parse(event.data);
+
+    const tbody =
+        document.getElementById('resultsTableBody');
+
+   if (data.length === 0) {
+
+    document.getElementById("peopleSeen").innerText = "0";
+    document.getElementById("dangerCount").innerText = "0";
+    document.getElementById("warningCount").innerText = "0";
+
+    document.getElementById("environment").innerText = "-";
+
+    document.getElementById("latestTrack").innerText = "-";
+    document.getElementById("latestAction").innerText = "-";
+    document.getElementById("latestConfidence").innerText = "-";
+    document.getElementById("latestAlert").innerText = "-";
+
+    document.getElementById("sceneEnv").innerText = "-";
+    document.getElementById("scenePeople").innerText = "-";
+    document.getElementById("sceneObjects").innerText = "-";
+
+    return;
+}
+
+    const currentTracks = {};
+
+    const currentVideo =
+    data[data.length - 1].video_source;
+
+    data
+        .filter(item => item.video_source === currentVideo)
+        .forEach(item => {
+            currentTracks[item.track_id] = item;
+        });
+
+    const activeTracks =
+        Object.values(currentTracks);
+
+    let dangerCount = 0;
+    let warningCount = 0;
+
+    activeTracks.forEach(track => {
+
+        if(track.current_alert_state === "DANGER")
+            dangerCount++;
+
+        if(track.current_alert_state === "WARNING")
+            warningCount++;
+    });
+
+    document.getElementById("dangerCount").innerText =
+        dangerCount;
+
+    document.getElementById("warningCount").innerText =
+        warningCount;
+
+
+
+if(activeTracks.length > 0){
+
+    const mostImportant =
+        activeTracks.find(t => t.current_alert_state === "DANGER")
+        || activeTracks.find(t => t.current_alert_state === "WARNING")
+        || activeTracks[0];
+
+            document.getElementById("peopleSeen").innerText =
+                mostImportant.scene.people_seen;
+
+            document.getElementById("environment").innerText =
+                mostImportant.scene.env_guess;
+
+
+            document.getElementById("sceneEnv").innerText =
+                mostImportant.scene.env_guess;
+
+            document.getElementById("scenePeople").innerText =
+                mostImportant.scene.people_seen;
+
+            document.getElementById("sceneObjects").innerText =
+                [...new Set(
+                    activeTracks.flatMap(t => t.scene.objects)
+                )].join(", ");
+
+            document.getElementById("latestTrack").innerText =
+                activeTracks.map(t => t.track_id).join(", ");
+
+            document.getElementById("latestAction").innerText =
+                activeTracks.map(t => t.final_action).join(" | ");
+
+            document.getElementById("latestConfidence").innerText =
+                activeTracks.map(t => t.confidence_score).join(" | ");
+
+            document.getElementById("latestAlert").innerText =
+                activeTracks
+                    .map(t => `${t.track_id}:${t.current_alert_state}`)
+                    .join(" | ");
+        }
+
+    tbody.innerHTML = "";
+
+    [...data].reverse().forEach(item => {
+
+        const tr = document.createElement('tr');
+
+        tr.innerHTML = `
+            <td>${item.video_source}</td>
+            <td>${item.track_id}</td>
+            <td>${item.final_action}</td>
+            <td>${item.confidence_score}</td>
+
+            <td class="${item.current_alert_state}">
+                ${item.current_alert_state}
+            </td>
+
+            <td>${item.warning_count}</td>
+            <td>${item.danger_count}</td>
+            <td>${item.anomaly_counter}</td>
+        `;
+
+        tbody.appendChild(tr);
+    });
+};
+
+async function loadAlertEvents() {
+
+    try {
+
+        const response =
+            await fetch("/alert-events");
+
+        const events =
+            await response.json();
+
+        const tbody =
+            document.getElementById("eventsTableBody");
+
+        tbody.innerHTML = "";
+
+        if(events.length === 0){
+
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="4" style="text-align:center;">
+                No alert events
+            </td>
+        </tr>
+    `;
+
+    return;
+}
+
+        [...events].reverse().forEach(event => {
+
+            const tr = document.createElement("tr");
+
+            tr.innerHTML = `
+                <td>${event.time}</td>
+                <td>${event.track_id}</td>
+                <td>${event.action}</td>
+                <td>${event.from_state} → ${event.to_state}</td>
+            `;
+
+            tbody.appendChild(tr);
+        });
+
+    } catch(error) {
+        console.error("Error loading alert events:", error);
+    }
+}
+
+ws.onclose = function() {
+    console.log("WebSocket connection closed.");
+};
+
+loadAlertEvents();
+setInterval(loadAlertEvents, 1000);
+
+</script>
+
+</body>
+</html>

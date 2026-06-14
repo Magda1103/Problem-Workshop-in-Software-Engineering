@@ -19,10 +19,11 @@ class AlertLogic:
         self.max_states = {}
         self.danger_counts = {}
         self.warning_counts = {}
+        self.event_log = []
 
 
 
-    def update(self, track_id, action):
+    def update(self, track_id, action, timestamp=None):
         """
         Updates alert state for tracked person
         Args:
@@ -66,6 +67,15 @@ class AlertLogic:
 
             if previous_state != "WARNING":
                 self.warning_counts[track_id] += 1
+
+        if previous_state != self.states[track_id]:
+            self.event_log.append({
+                "time": round(timestamp, 2) if timestamp is not None else None,
+                "track_id": int(track_id),
+                "action": action,
+                "from_state": previous_state,
+                "to_state": self.states[track_id]
+            })
 
         # Return alert information
         return {

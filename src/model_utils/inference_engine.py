@@ -19,6 +19,20 @@ from src.model_utils.fine_tuning import preprocess_frame
 LATEST_FRAME = None
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+MIN_ACTION_CONFIDENCE = 55.0
+MIN_ANOMALY_CONFIDENCE = MIN_ACTION_CONFIDENCE
+UNCERTAIN_ACTION = "uncertain"
+SCENE_REQUIRED_OBJECTS = {
+    "person_rides_bicycle": {"bicycle"}
+}
+SCENE_CONTEXT_FALLBACKS = {
+    "person_rides_bicycle": {
+        "required_present": {"car"},
+        "required_absent": {"bicycle"},
+        "fallback_action": "person_enters_car"
+    }
+}
+ANOMALY_ACTIONS = {"person_steals_object"}
 
 class InferenceEngine:
     """
@@ -43,7 +57,7 @@ class InferenceEngine:
         self.latest_alerts = {}
 
         self.scene_objects_top_k = 5
-        self.scene_analysis_step = 5
+        self.scene_analysis_step = 15
         self.scene_object_counts = Counter()
         self.people_seen = set()
         
@@ -114,9 +128,55 @@ class InferenceEngine:
                 name = names.get(int(cls_id), str(int(cls_id)))
                 self.scene_object_counts[name] += 1
 
+    def _has_seen_scene_object(self, object_names):
+        return any(self.scene_object_counts.get(name, 0) > 0 for name in object_names)
+
+    def _has_not_seen_scene_object(self, object_names):
+        return all(self.scene_object_counts.get(name, 0) == 0 for name in object_names)
+
+    def _filter_prediction(self, pred_label, confidence):
+        if confidence < MIN_ACTION_CONFIDENCE:
+            return UNCERTAIN_ACTION
+
+        fallback = SCENE_CONTEXT_FALLBACKS.get(pred_label)
+        if fallback:
+            has_required_context = self._has_seen_scene_object(fallback["required_present"])
+            misses_conflicting_context = self._has_not_seen_scene_object(fallback["required_absent"])
+            if has_required_context and misses_conflicting_context:
+                return fallback["fallback_action"]
+
+        required_objects = SCENE_REQUIRED_OBJECTS.get(pred_label)
+        if required_objects and not self._has_seen_scene_object(required_objects):
+            return UNCERTAIN_ACTION
+
+        if pred_label in ANOMALY_ACTIONS and confidence < MIN_ANOMALY_CONFIDENCE:
+            return UNCERTAIN_ACTION
+
+        return pred_label
+
+    def _smooth_action(self, history):
+        scores = {}
+        counts = {}
+        all_confidences = []
+
+        for action, confidence in history:
+            all_confidences.append(confidence)
+            if action == UNCERTAIN_ACTION:
+                continue
+            scores[action] = scores.get(action, 0.0) + confidence
+            counts[action] = counts.get(action, 0) + 1
+
+        if not scores:
+            avg_confidence = sum(all_confidences) / len(all_confidences) if all_confidences else 0.0
+            return UNCERTAIN_ACTION, round(avg_confidence, 2)
+
+        action = max(scores, key=scores.get)
+        confidence = round(scores[action] / counts[action], 2)
+        return action, confidence
+
     def run_inference(self):
         """
-        Consumer thread: Processes frames and applies Majority Vote.
+        Consumer thread: Processes frames and applies confidence-weighted smoothing.
         """
         while not self.stop_event.is_set() or not self.queue.empty():
             try:
@@ -137,23 +197,23 @@ class InferenceEngine:
             if self.device.type == 'cuda':
                 torch.cuda.empty_cache()
 
-            pred_label = self.idx_to_class[pred.item()] 
+            raw_pred_label = self.idx_to_class[pred.item()]
             conf_percentage = round(confidence.item() * 100, 2)
+            pred_label = self._filter_prediction(raw_pred_label, conf_percentage)
             
             with self.lock:
                 if track_id not in self.action_history:
                     self.action_history[track_id] = deque(maxlen=self.history_length)
                 
-                self.action_history[track_id].append(pred_label)
+                self.action_history[track_id].append((pred_label, conf_percentage))
                 
-                # Majority Vote Logic
-                most_common_action = Counter(self.action_history[track_id]).most_common(1)[0][0]
-                self.latest_predictions[track_id] = most_common_action
-                self.latest_confidences[track_id] = conf_percentage
+                smoothed_action, smoothed_confidence = self._smooth_action(self.action_history[track_id])
+                self.latest_predictions[track_id] = smoothed_action
+                self.latest_confidences[track_id] = smoothed_confidence
 
                 alert = self.alert_logic.update(
                     track_id,
-                    most_common_action,
+                    smoothed_action,
                     timestamp
                 )
                 self.latest_alerts[track_id] = alert
@@ -237,8 +297,31 @@ class InferenceEngine:
                         color = (0, 0, 255)
                     # Visualization
                     cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-                    cv2.putText(frame, f"ID:{int(track_id)} {current_action} [{alert_state}]", (x1, y1-10),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+                    label = f"ID:{int(track_id)} {current_action} [{alert_state}]"
+                    font_scale = 0.55
+                    thickness = 2
+                    (label_width, label_height), baseline = cv2.getTextSize(
+                        label,
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        font_scale,
+                        thickness
+                    )
+                    padding = 5
+                    text_x = min(max(0, x1), max(0, frame.shape[1] - label_width - (2 * padding)))
+
+                    if y1 - label_height - baseline - (2 * padding) > 0:
+                        box_y1 = y1 - label_height - baseline - (2 * padding)
+                    else:
+                        box_y1 = min(y2 + 4, max(0, frame.shape[0] - label_height - baseline - (2 * padding)))
+
+                    box_x1 = text_x
+                    box_x2 = min(frame.shape[1] - 1, box_x1 + label_width + (2 * padding))
+                    box_y2 = min(frame.shape[0] - 1, box_y1 + label_height + baseline + (2 * padding))
+                    text_y = box_y1 + padding + label_height
+
+                    cv2.rectangle(frame, (box_x1, box_y1), (box_x2, box_y2), (0, 0, 0), -1)
+                    cv2.putText(frame, label, (box_x1 + padding, text_y),
+                                cv2.FONT_HERSHEY_SIMPLEX, font_scale, color, thickness)
 
             # Garbage Collector: Prevent Memory Leaks by removing stale IDs (30 frames inactivity)
             with self.lock:

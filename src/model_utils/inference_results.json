@@ -1,1 +1,84 @@
-[]
+[
+    {
+        "video_source": "1A6F38E2-B188-45CC-9AE5-139D9F0466AD_0.mp4",
+        "track_id": 1,
+        "final_action": "person_enters_car",
+        "confidence_score": "67.99%",
+        "current_alert_state": "SAFE",
+        "max_alert_state": "SAFE",
+        "anomaly_counter": 0,
+        "danger_count": 0,
+        "warning_count": 0,
+        "scene": {
+            "objects": [
+                "car"
+            ],
+            "env_guess": "outdoors",
+            "people_seen": 1,
+            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: car"
+        }
+    },
+    {
+        "video_source": "1A6F38E2-B188-45CC-9AE5-139D9F0466AD_0.mp4",
+        "track_id": 1,
+        "final_action": "person_picks_up_object",
+        "confidence_score": "59.27%",
+        "current_alert_state": "SAFE",
+        "max_alert_state": "SAFE",
+        "anomaly_counter": 0,
+        "danger_count": 0,
+        "warning_count": 0,
+        "scene": {
+            "objects": [
+                "car",
+                "potted plant"
+            ],
+            "env_guess": "outdoors",
+            "people_seen": 1,
+            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: car, potted plant"
+        }
+    },
+    {
+        "video_source": "1A6F38E2-B188-45CC-9AE5-139D9F0466AD_0.mp4",
+        "track_id": 1,
+        "final_action": "person_picks_up_object",
+        "confidence_score": "59.65%",
+        "current_alert_state": "SAFE",
+        "max_alert_state": "SAFE",
+        "anomaly_counter": 0,
+        "danger_count": 0,
+        "warning_count": 0,
+        "scene": {
+            "objects": [
+                "car",
+                "potted plant",
+                "chair"
+            ],
+            "env_guess": "outdoors",
+            "people_seen": 1,
+            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: car, potted plant, chair"
+        }
+    },
+    {
+        "video_source": "1A6F38E2-B188-45CC-9AE5-139D9F0466AD_0.mp4",
+        "track_id": 2,
+        "final_action": "person_enters_car",
+        "confidence_score": "75.92%",
+        "current_alert_state": "SAFE",
+        "max_alert_state": "SAFE",
+        "anomaly_counter": 0,
+        "danger_count": 0,
+        "warning_count": 0,
+        "scene": {
+            "objects": [
+                "car",
+                "potted plant",
+                "chair",
+                "truck"
+            ],
+            "env_guess": "outdoors",
+            "people_seen": 3,
+            "scene_summ": "Environment: outdoors, people seen: 3, surroundings: car, potted plant, chair, truck"
+        }
+    }
+]

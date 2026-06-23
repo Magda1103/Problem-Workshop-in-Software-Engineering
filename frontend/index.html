@@ -140,7 +140,9 @@
         #videoPlayer {
             display: none;
             width: 100%;
-            min-height: 400px;
+            height: clamp(280px, 60vh, 600px);
+            object-fit: contain;
+            background: #111;
             border-radius: 8px;
             margin-top: 20px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);

@@ -16,7 +16,6 @@ The project is implemented in **Python**.
 - Zuzanna Adamczyk
 - Praskovya Horbach
 - Tobiasz Kowalczyk
-- Kacper Majkowski
 - Silchankava Nadzeja
 - Magdalena Synowiec
 - Beata Szczęsna

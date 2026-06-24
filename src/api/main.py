@@ -21,6 +21,28 @@ CURRENT_ENGINE = None
 # Path to inference results file
 FILE = "src/model_utils/inference_results.json"
 EVENTS_FILE = "src/model_utils/alert_events.json"
+LOG_FILES = (FILE, EVENTS_FILE)
+
+
+def clear_analysis_logs():
+    """
+    Clears detection and alert logs before starting analysis for a new upload.
+    """
+    for log_file in LOG_FILES:
+        with open(log_file, "w") as f:
+            json.dump([], f)
+
+
+def stop_current_analysis():
+    """
+    Stops the previous background analysis before starting a new upload.
+    """
+    global CURRENT_ENGINE
+
+    if CURRENT_ENGINE is not None:
+        print("Stopping previous AI analysis...")
+        CURRENT_ENGINE.stop_event.set()
+        time.sleep(1)
 
 @app.get("/status")
 def status():
@@ -84,14 +106,8 @@ def run_ai_analysis(video_path_str: str):
     """
     global CURRENT_ENGINE
 
-    with open(FILE, "w") as f:
-        json.dump([], f)
-
-    if CURRENT_ENGINE is not None:
-        print("Stopping previous AI analysis...")
-        CURRENT_ENGINE.stop_event.set()
-        time.sleep(1)
-
+    stop_current_analysis()
+    clear_analysis_logs()
     inference_engine.LATEST_FRAME = None  # Clear the previous frame buffer
     print(f"Starting AI analysis for file: {video_path_str}")
     video_path = Path(video_path_str)
@@ -123,6 +139,10 @@ async def video_feed():
 @app.post("/upload/")
 async def upload_video(file: UploadFile = File(...), background_tasks: BackgroundTasks = BackgroundTasks()):
     file_path = os.path.join(UPLOAD_DIR, file.filename)
+
+    stop_current_analysis()
+    clear_analysis_logs()
+    inference_engine.LATEST_FRAME = None
 
     # Save the file to disk
     with open(file_path, "wb") as buffer:

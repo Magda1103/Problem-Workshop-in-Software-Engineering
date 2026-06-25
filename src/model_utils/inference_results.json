@@ -1,9 +1,60 @@
 [
     {
-        "video_source": "videoplayback-2.mp4",
+        "video_source": "A_realistic_surveillance_style-4.mp4",
+        "track_id": 1,
+        "final_action": "uncertain",
+        "confidence_score": "51.98%",
+        "current_alert_state": "SAFE",
+        "max_alert_state": "SAFE",
+        "anomaly_counter": 0,
+        "danger_count": 0,
+        "warning_count": 0,
+        "scene": {
+            "objects": [],
+            "env_guess": "unknown",
+            "people_seen": 1,
+            "scene_summ": "Environment: unknown, people seen: 1"
+        }
+    },
+    {
+        "video_source": "A_realistic_surveillance_style-4.mp4",
         "track_id": 1,
         "final_action": "person_picks_up_object",
-        "confidence_score": "61.94%",
+        "confidence_score": "59.07%",
+        "current_alert_state": "SAFE",
+        "max_alert_state": "SAFE",
+        "anomaly_counter": 0,
+        "danger_count": 0,
+        "warning_count": 0,
+        "scene": {
+            "objects": [],
+            "env_guess": "unknown",
+            "people_seen": 1,
+            "scene_summ": "Environment: unknown, people seen: 1"
+        }
+    },
+    {
+        "video_source": "A_realistic_surveillance_style-4.mp4",
+        "track_id": 1,
+        "final_action": "person_picks_up_object",
+        "confidence_score": "62.14%",
+        "current_alert_state": "SAFE",
+        "max_alert_state": "SAFE",
+        "anomaly_counter": 0,
+        "danger_count": 0,
+        "warning_count": 0,
+        "scene": {
+            "objects": [],
+            "env_guess": "unknown",
+            "people_seen": 1,
+            "scene_summ": "Environment: unknown, people seen: 1"
+        }
+    },
+    {
+        "video_source": "A_realistic_surveillance_style-4.mp4",
+        "track_id": 1,
+        "final_action": "uncertain",
+        "confidence_score": "48.39%",
         "current_alert_state": "SAFE",
         "max_alert_state": "SAFE",
         "anomaly_counter": 0,
@@ -11,51 +62,49 @@
         "warning_count": 0,
         "scene": {
             "objects": [
-                "tv"
+                "skateboard"
             ],
-            "env_guess": "indoors",
+            "env_guess": "outdoors",
             "people_seen": 1,
-            "scene_summ": "Environment: indoors, people seen: 1, surroundings: tv"
+            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: skateboard"
         }
     },
     {
-        "video_source": "videoplayback-2.mp4",
+        "video_source": "A_realistic_surveillance_style-4.mp4",
         "track_id": 1,
-        "final_action": "person_steals_object",
-        "confidence_score": "63.45%",
-        "current_alert_state": "WARNING",
-        "max_alert_state": "WARNING",
-        "anomaly_counter": 1,
+        "final_action": "uncertain",
+        "confidence_score": "46.37%",
+        "current_alert_state": "SAFE",
+        "max_alert_state": "SAFE",
+        "anomaly_counter": 0,
         "danger_count": 0,
-        "warning_count": 1,
+        "warning_count": 0,
         "scene": {
             "objects": [
-                "tv",
-                "suitcase"
+                "skateboard"
             ],
-            "env_guess": "indoors",
+            "env_guess": "outdoors",
             "people_seen": 1,
-            "scene_summ": "Environment: indoors, people seen: 1, surroundings: tv, suitcase"
+            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: skateboard"
         }
     },
     {
-        "video_source": "videoplayback-2.mp4",
+        "video_source": "A_realistic_surveillance_style-4.mp4",
         "track_id": 1,
-        "final_action": "person_steals_object",
-        "confidence_score": "70.48%",
-        "current_alert_state": "DANGER",
-        "max_alert_state": "DANGER",
-        "anomaly_counter": 7,
-        "danger_count": 1,
-        "warning_count": 1,
+        "final_action": "uncertain",
+        "confidence_score": "46.59%",
+        "current_alert_state": "SAFE",
+        "max_alert_state": "SAFE",
+        "anomaly_counter": 0,
+        "danger_count": 0,
+        "warning_count": 0,
         "scene": {
             "objects": [
-                "tv",
-                "suitcase"
+                "skateboard"
             ],
-            "env_guess": "indoors",
+            "env_guess": "outdoors",
             "people_seen": 1,
-            "scene_summ": "Environment: indoors, people seen: 1, surroundings: tv, suitcase"
+            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: skateboard"
         }
     }
 ]

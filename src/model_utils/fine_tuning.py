@@ -18,7 +18,7 @@ INPUT_FOLDER = BASE_DIR / 'data' / 'videos'
 BASE_MODEL_INPUT = BASE_DIR / 'models' / 'best_model.pth'
 MODEL_OUTPUT = BASE_DIR / 'models' / 'fine_tuned_model.pth'
 STATS_OUTPUT = BASE_DIR / 'models' / 'fine_tuning_stats.txt'
-FINE_TUNE_SAMPLES = 1000
+FINE_TUNE_SAMPLES = None
 SEED = 42
 os.makedirs(os.path.dirname(MODEL_OUTPUT), exist_ok=True)
 
@@ -103,7 +103,8 @@ def create_dataloaders(all_data_dir, batch_size, val_ratio=0.2):
     """
         Build datasets and dataloaders for training and validation.
     """
-    classes = ['person_steals_object', 'person_enters_car', 'person_rides_bicycle', 'person_picks_up_object']  # Fixed class list for fine-tuning.
+    classes = ['person_steals_object', 'person_enters_car', 'person_rides_bicycle',
+               'person_picks_up_object']  # Fixed class list for fine-tuning.
     class_to_idx = {cls: i for i, cls in enumerate(classes)}  # Maps class names to numeric labels.
 
     # Separate datasets keep train clips random and validation clips repeatable.
@@ -244,7 +245,8 @@ def load_base_model_weights(model, base_model_path=BASE_MODEL_INPUT):
     model.load_state_dict(model_state)
 
     skipped_layers = len(state_dict) - len(matching_state)
-    print(f"Loaded {len(matching_state)} layers from {base_model_path.name}; skipped {skipped_layers} incompatible layers.")
+    print(
+        f"Loaded {len(matching_state)} layers from {base_model_path.name}; skipped {skipped_layers} incompatible layers.")
 
     return model
 
@@ -317,7 +319,7 @@ def train_model(model, train_loader, val_loader, epochs, device):
             best_val_acc = val_acc
             torch.save(model.state_dict(), MODEL_OUTPUT)  # Save best model weights.
             print("Model saved!")
-        
+
         with open(STATS_OUTPUT, 'a') as f:
             f.write(f"{epoch + 1},{avg_loss:.4f},{train_acc:.4f},{val_acc:.4f}\n")
         print(f"Training statistics saved to {STATS_OUTPUT}")

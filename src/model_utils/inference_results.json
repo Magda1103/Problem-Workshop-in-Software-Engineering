@@ -1,28 +1,9 @@
 [
     {
-        "video_source": "1A6F38E2-B188-45CC-9AE5-139D9F0466AD_0.mp4",
-        "track_id": 1,
-        "final_action": "person_enters_car",
-        "confidence_score": "67.99%",
-        "current_alert_state": "SAFE",
-        "max_alert_state": "SAFE",
-        "anomaly_counter": 0,
-        "danger_count": 0,
-        "warning_count": 0,
-        "scene": {
-            "objects": [
-                "car"
-            ],
-            "env_guess": "outdoors",
-            "people_seen": 1,
-            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: car"
-        }
-    },
-    {
-        "video_source": "1A6F38E2-B188-45CC-9AE5-139D9F0466AD_0.mp4",
+        "video_source": "videoplayback-2.mp4",
         "track_id": 1,
         "final_action": "person_picks_up_object",
-        "confidence_score": "59.27%",
+        "confidence_score": "61.94%",
         "current_alert_state": "SAFE",
         "max_alert_state": "SAFE",
         "anomaly_counter": 0,
@@ -30,55 +11,51 @@
         "warning_count": 0,
         "scene": {
             "objects": [
-                "car",
-                "potted plant"
+                "tv"
             ],
-            "env_guess": "outdoors",
+            "env_guess": "indoors",
             "people_seen": 1,
-            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: car, potted plant"
+            "scene_summ": "Environment: indoors, people seen: 1, surroundings: tv"
         }
     },
     {
-        "video_source": "1A6F38E2-B188-45CC-9AE5-139D9F0466AD_0.mp4",
+        "video_source": "videoplayback-2.mp4",
         "track_id": 1,
-        "final_action": "person_picks_up_object",
-        "confidence_score": "59.65%",
-        "current_alert_state": "SAFE",
-        "max_alert_state": "SAFE",
-        "anomaly_counter": 0,
+        "final_action": "person_steals_object",
+        "confidence_score": "63.45%",
+        "current_alert_state": "WARNING",
+        "max_alert_state": "WARNING",
+        "anomaly_counter": 1,
         "danger_count": 0,
-        "warning_count": 0,
+        "warning_count": 1,
         "scene": {
             "objects": [
-                "car",
-                "potted plant",
-                "chair"
+                "tv",
+                "suitcase"
             ],
-            "env_guess": "outdoors",
+            "env_guess": "indoors",
             "people_seen": 1,
-            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: car, potted plant, chair"
+            "scene_summ": "Environment: indoors, people seen: 1, surroundings: tv, suitcase"
         }
     },
     {
-        "video_source": "1A6F38E2-B188-45CC-9AE5-139D9F0466AD_0.mp4",
-        "track_id": 2,
-        "final_action": "person_enters_car",
-        "confidence_score": "75.92%",
-        "current_alert_state": "SAFE",
-        "max_alert_state": "SAFE",
-        "anomaly_counter": 0,
-        "danger_count": 0,
-        "warning_count": 0,
+        "video_source": "videoplayback-2.mp4",
+        "track_id": 1,
+        "final_action": "person_steals_object",
+        "confidence_score": "70.48%",
+        "current_alert_state": "DANGER",
+        "max_alert_state": "DANGER",
+        "anomaly_counter": 7,
+        "danger_count": 1,
+        "warning_count": 1,
         "scene": {
             "objects": [
-                "car",
-                "potted plant",
-                "chair",
-                "truck"
+                "tv",
+                "suitcase"
             ],
-            "env_guess": "outdoors",
-            "people_seen": 3,
-            "scene_summ": "Environment: outdoors, people seen: 3, surroundings: car, potted plant, chair, truck"
+            "env_guess": "indoors",
+            "people_seen": 1,
+            "scene_summ": "Environment: indoors, people seen: 1, surroundings: tv, suitcase"
         }
     }
 ]

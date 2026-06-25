@@ -1,533 +1,1741 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Video Inference Dashboard</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Behavior Intelligence Console</title>
 
     <style>
+        :root {
+            --bg-warm: #f5efe4;
+            --bg-cool: #edf3f8;
+            --paper: rgba(255, 255, 255, 0.86);
+            --paper-strong: rgba(255, 255, 255, 0.97);
+            --ink: #1f2a37;
+            --muted: #5c6978;
+            --line: #c8d2dc;
+            --navy: #17324d;
+            --navy-soft: #2d5b85;
+            --teal: #3d7b7b;
+            --amber: #c48a2f;
+            --safe: #2f7d52;
+            --warning: #bf7a1f;
+            --danger: #b44b43;
+            --safe-bg: #e5f5eb;
+            --warning-bg: #fff2dd;
+            --danger-bg: #fbe4e1;
+            --shadow: 0 24px 60px rgba(29, 52, 74, 0.12);
+            --shadow-soft: 0 10px 25px rgba(29, 52, 74, 0.08);
+            --radius-xl: 28px;
+            --radius-lg: 22px;
+            --radius-md: 16px;
+            --radius-sm: 12px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
-            font-family: sans-serif;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            background: #f4f4f9;
-        }
-
-        .upload-container {
-            border: 2px dashed #ccc;
-            padding: 40px;
-            text-align: center;
-            background: #fff;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-
-        button {
-            background: #007bff;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            margin-top: 10px;
-        }
-
-        button:hover {
-            background: #0056b3;
-        }
-
-        #status {
-            margin-top: 10px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        #videoPlayer {
-            display: none;
-            width: 100%;
-            border-radius: 8px;
-            margin-top: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-
-
-
-        .card {
-            flex: 1;
-            min-width: 180px;
-            background: white;
-            border-radius: 8px;
-            padding: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-
-        .card h4 {
             margin: 0;
-            color: #555;
+            min-height: 100vh;
+            font-family: "Trebuchet MS", "Lucida Sans Unicode", "Segoe UI", sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at top left, rgba(212, 228, 241, 0.95), transparent 28%),
+                radial-gradient(circle at top right, rgba(250, 235, 206, 0.85), transparent 26%),
+                linear-gradient(135deg, var(--bg-warm) 0%, var(--bg-cool) 56%, #f7fafc 100%);
         }
 
-        .card p {
-            font-size: 24px;
-            font-weight: bold;
-            margin-top: 10px;
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            opacity: 0.5;
+            background-image:
+                linear-gradient(rgba(23, 50, 77, 0.045) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(23, 50, 77, 0.045) 1px, transparent 1px);
+            background-size: 92px 92px;
+            mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.38), transparent 82%);
+        }
+
+        .shell {
+            width: min(1480px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 28px 0 40px;
+        }
+
+        .surface {
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: var(--radius-xl);
+            background: var(--paper);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(18px);
+            animation: rise 0.7s ease both;
+        }
+
+        .surface::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: linear-gradient(140deg, rgba(255, 255, 255, 0.42), transparent 46%, rgba(23, 50, 77, 0.035));
+        }
+
+        .hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1.5fr) minmax(320px, 0.9fr);
+            gap: 28px;
+            padding: 34px 34px 28px;
+        }
+
+        .eyebrow {
+            margin: 0 0 10px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--navy-soft);
+        }
+
+        h1,
+        h2,
+        h3,
+        h4 {
+            font-family: "Palatino Linotype", "Book Antiqua", Georgia, serif;
+            letter-spacing: -0.02em;
+        }
+
+        .hero h1 {
+            margin: 0;
+            font-size: clamp(2.4rem, 4vw, 4.35rem);
+            line-height: 0.96;
+            max-width: 12ch;
+        }
+
+        .hero-copy p {
+            max-width: 62ch;
+            margin: 18px 0 0;
+            font-size: 1rem;
+            line-height: 1.65;
+            color: var(--muted);
+        }
+
+        .hero-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 24px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border-radius: 999px;
+            font-size: 0.9rem;
+            color: var(--navy);
+            background: rgba(23, 50, 77, 0.08);
+            border: 1px solid rgba(23, 50, 77, 0.08);
+        }
+
+        .hero-side {
+            display: grid;
+            gap: 14px;
+        }
+
+        .signal-card {
+            position: relative;
+            padding: 18px 18px 16px;
+            border-radius: var(--radius-lg);
+            background: var(--paper-strong);
+            border: 1px solid rgba(23, 50, 77, 0.08);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .signal-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .signal-value {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.08rem;
+            font-weight: 700;
+            color: var(--ink);
+        }
+
+        .signal-value small {
+            display: block;
+            margin-top: 6px;
+            font-size: 0.85rem;
+            font-weight: 400;
+            color: var(--muted);
+        }
+
+        .signal-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 700;
+        }
+
+        .signal-pill::before {
+            content: "";
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: currentColor;
+            box-shadow: 0 0 0 0 currentColor;
+            animation: pulse 1.8s infinite;
+        }
+
+        .signal-pill.online {
+            color: var(--safe);
+            background: var(--safe-bg);
+        }
+
+        .signal-pill.waiting {
+            color: var(--warning);
+            background: var(--warning-bg);
+        }
+
+        .signal-pill.offline {
+            color: var(--danger);
+            background: var(--danger-bg);
+        }
+
+        .main-grid {
+            display: grid;
+            gap: 24px;
+            margin-top: 24px;
+        }
+
+        .monitor-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.35fr) minmax(370px, 0.95fr);
+            gap: 24px;
+            align-items: stretch;
         }
 
         .panel {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 24px;
         }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            background: #fff;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-
-        th {
-            background-color: #007bff;
-            color: white;
-        }
-
-        .SAFE {
-            color: green;
-            font-weight: bold;
-        }
-
-        .WARNING {
-            color: orange;
-            font-weight: bold;
-        }
-
-        .DANGER {
-            color: red;
-            font-weight: bold;
-        }
-        .main-layout {
-            display: flex;
-            gap: 20px;
-            align-items: flex-start;
-            margin-top: 20px;
-        }
-
-        .video-section {
-            flex: 2;
-        }
-
-        .info-section {
-            flex: 1;
-        }
-
-        .dashboard {
+        .video-stage {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            grid-template-rows: auto 1fr auto;
+            height: clamp(620px, 78vh, 860px);
+        }
+
+        .intelligence-panel {
+            display: grid;
+            grid-template-rows: auto auto 1fr;
+            height: clamp(620px, 78vh, 860px);
+        }
+
+        .info-scroll {
+            min-height: 0;
+            display: grid;
+            gap: 16px;
+            overflow: auto;
+            padding-right: 6px;
+        }
+
+        .info-scroll::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .info-scroll::-webkit-scrollbar-thumb {
+            border-radius: 999px;
+            background: rgba(23, 50, 77, 0.14);
+        }
+
+        .section-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
             margin-bottom: 20px;
+        }
+
+        .section-head h2,
+        .section-head h3 {
+            margin: 0;
+            font-size: 1.35rem;
+        }
+
+        .section-head p {
+            margin: 8px 0 0;
+            color: var(--muted);
+            line-height: 1.55;
+        }
+
+        .upload-shell {
+            display: grid;
+            grid-template-columns: minmax(0, 1.2fr) auto;
+            gap: 18px;
+            align-items: end;
+        }
+
+        .upload-card {
+            padding: 22px;
+            border-radius: var(--radius-lg);
+            background:
+                linear-gradient(135deg, rgba(23, 50, 77, 0.95), rgba(47, 95, 141, 0.9));
+            color: #f7fafc;
+            box-shadow: 0 24px 40px rgba(23, 50, 77, 0.22);
+        }
+
+        .upload-card h3 {
+            margin: 0 0 10px;
+            font-size: 1.5rem;
+            color: #ffffff;
+        }
+
+        .upload-card p {
+            margin: 0 0 16px;
+            line-height: 1.55;
+            color: rgba(247, 250, 252, 0.82);
+        }
+
+        .upload-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        .ghost-button,
+        .primary-button {
+            appearance: none;
+            border: none;
+            border-radius: 999px;
+            padding: 13px 18px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+
+        .ghost-button:hover,
+        .primary-button:hover {
+            transform: translateY(-1px);
+        }
+
+        .ghost-button {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .primary-button {
+            color: #17324d;
+            background: linear-gradient(135deg, #f6d58b, #e7b550);
+            box-shadow: 0 12px 22px rgba(231, 181, 80, 0.28);
+        }
+
+        .primary-button:disabled {
+            cursor: wait;
+            opacity: 0.7;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .upload-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.92rem;
+            color: rgba(247, 250, 252, 0.82);
+        }
+
+        .upload-meta strong {
+            color: #ffffff;
+        }
+
+        .status-card {
+            height: 100%;
+            padding: 22px;
+            border-radius: var(--radius-lg);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(246, 249, 252, 0.88));
+            border: 1px solid rgba(23, 50, 77, 0.08);
+        }
+
+        .status-chip {
+            display: inline-flex;
+            align-items: center;
+            min-height: 44px;
+            padding: 10px 14px;
+            border-radius: 14px;
+            font-weight: 700;
+            line-height: 1.45;
+        }
+
+        .status-chip[data-tone="neutral"] {
+            color: var(--navy);
+            background: rgba(23, 50, 77, 0.08);
+        }
+
+        .status-chip[data-tone="success"] {
+            color: var(--safe);
+            background: var(--safe-bg);
+        }
+
+        .status-chip[data-tone="warning"] {
+            color: var(--warning);
+            background: var(--warning-bg);
+        }
+
+        .status-chip[data-tone="danger"] {
+            color: var(--danger);
+            background: var(--danger-bg);
+        }
+
+        .video-frame {
+            position: relative;
+            overflow: hidden;
+            border-radius: calc(var(--radius-xl) - 6px);
+            background:
+                linear-gradient(135deg, rgba(23, 50, 77, 0.08), rgba(61, 123, 123, 0.08)),
+                repeating-linear-gradient(90deg, rgba(23, 50, 77, 0.06), rgba(23, 50, 77, 0.06) 1px, transparent 1px, transparent 70px);
+            border: 1px solid rgba(23, 50, 77, 0.08);
+            min-height: 0;
+            height: 100%;
+        }
+
+        .video-frame::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), transparent 18%, transparent 82%, rgba(23, 50, 77, 0.06));
+            pointer-events: none;
         }
 
         #videoPlayer {
             display: none;
             width: 100%;
-            height: clamp(280px, 60vh, 600px);
-            object-fit: contain;
-            background: #111;
-            border-radius: 8px;
-            margin-top: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            height: 100%;
+            min-height: 0;
+            object-fit: cover;
+            background: #0e2235;
+        }
+
+        .video-placeholder {
+            position: absolute;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            padding: 32px;
+            text-align: center;
+        }
+
+        .placeholder-card {
+            max-width: 420px;
+            padding: 24px;
+            border-radius: var(--radius-lg);
+            background: rgba(255, 255, 255, 0.72);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .placeholder-card h3 {
+            margin: 0 0 10px;
+            font-size: 1.5rem;
+        }
+
+        .placeholder-card p {
+            margin: 0;
+            line-height: 1.6;
+            color: var(--muted);
+        }
+
+        .video-footer {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 14px;
+            margin-top: 18px;
+            color: var(--muted);
+        }
+
+        .video-stat {
+            display: grid;
+            gap: 4px;
+        }
+
+        .video-stat span:first-child {
+            font-size: 0.76rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .video-stat strong {
+            font-size: 1rem;
+            color: var(--ink);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .metric-card {
+            padding: 18px;
+            border-radius: var(--radius-lg);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(247, 249, 252, 0.9));
+            border: 1px solid rgba(23, 50, 77, 0.08);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .metric-label {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .metric-value {
+            margin: 12px 0 0;
+            font-size: clamp(1.85rem, 3vw, 2.4rem);
+            line-height: 1;
+            font-weight: 800;
+            color: var(--navy);
+        }
+
+        .metric-note {
+            margin-top: 10px;
+            color: var(--muted);
+            font-size: 0.88rem;
+        }
+
+        .metric-card.danger .metric-value {
+            color: var(--danger);
+        }
+
+        .metric-card.warning .metric-value {
+            color: var(--warning);
+        }
+
+        .spotlight {
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 249, 252, 0.96)),
+                linear-gradient(135deg, rgba(23, 50, 77, 0.05), transparent);
+        }
+
+        .mini-section {
+            padding: 18px;
+            border-radius: var(--radius-lg);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 249, 252, 0.94));
+            border: 1px solid rgba(23, 50, 77, 0.08);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .mini-section h3 {
+            margin: 0;
+            font-size: 1.18rem;
+        }
+
+        .mini-copy {
+            margin: 8px 0 0;
+            color: var(--muted);
+            line-height: 1.55;
+        }
+
+        .spotlight-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        .spotlight-header h3 {
+            margin: 0;
+            font-size: 1.6rem;
+        }
+
+        .spotlight-subtitle {
+            margin: 8px 0 0;
+            color: var(--muted);
+        }
+
+        .alert-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 102px;
+            padding: 10px 14px;
+            border-radius: 999px;
+            font-size: 0.84rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .alert-pill.safe {
+            color: var(--safe);
+            background: var(--safe-bg);
+        }
+
+        .alert-pill.warning {
+            color: var(--warning);
+            background: var(--warning-bg);
+        }
+
+        .alert-pill.danger {
+            color: var(--danger);
+            background: var(--danger-bg);
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .detail-card {
+            padding: 14px;
+            border-radius: var(--radius-md);
+            background: rgba(23, 50, 77, 0.05);
+        }
+
+        .detail-card span {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--muted);
+            font-size: 0.76rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .detail-card strong {
+            display: block;
+            font-size: 1rem;
+            line-height: 1.45;
+            color: var(--ink);
+        }
+
+        /* NOWY STYL dla Scene Basis */
+        .basis-card {
+            margin-top: 12px;
+            padding: 14px;
+            border-radius: var(--radius-md);
+            background: rgba(61, 123, 123, 0.08);
+            border-left: 4px solid var(--teal);
+        }
+
+        .basis-card span {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--muted);
+            font-size: 0.76rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .basis-card strong {
+            display: block;
+            font-size: 0.95rem;
+            font-weight: 400;
+            line-height: 1.6;
+            color: var(--ink);
+        }
+
+        .scene-summary {
+            margin-top: 16px;
+            padding: 16px;
+            border-radius: var(--radius-md);
+            background: rgba(61, 123, 123, 0.08);
+            color: var(--ink);
+            line-height: 1.6;
+        }
+
+        .chip-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .chip,
+        .ghost-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 999px;
+            font-size: 0.88rem;
+            font-weight: 700;
+        }
+
+        .chip {
+            color: var(--navy);
+            background: rgba(23, 50, 77, 0.08);
+        }
+
+        .ghost-chip {
+            color: var(--muted);
+            background: rgba(92, 105, 120, 0.1);
+        }
+
+        .tracks-list,
+        .timeline-list,
+        .detections-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .track-card,
+        .event-card,
+        .detection-card {
+            position: relative;
+            padding: 16px;
+            border-radius: var(--radius-md);
+            background: rgba(255, 255, 255, 0.82);
+            border: 1px solid rgba(23, 50, 77, 0.08);
+        }
+
+        .track-card::before,
+        .event-card::before,
+        .detection-card::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 16px;
+            bottom: 16px;
+            width: 4px;
+            border-radius: 999px;
+            background: var(--navy-soft);
+        }
+
+        .track-card[data-alert="warning"]::before,
+        .event-card[data-alert="warning"]::before,
+        .detection-card[data-alert="warning"]::before {
+            background: var(--warning);
+        }
+
+        .track-card[data-alert="danger"]::before,
+        .event-card[data-alert="danger"]::before,
+        .detection-card[data-alert="danger"]::before {
+            background: var(--danger);
+        }
+
+        .track-top,
+        .event-top,
+        .detection-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-left: 10px;
+        }
+
+        .track-name,
+        .event-name,
+        .detection-name {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 800;
+        }
+
+        .track-meta,
+        .event-meta,
+        .detection-meta {
+            margin: 8px 0 0 10px;
+            color: var(--muted);
+            line-height: 1.55;
+        }
+
+        .detection-meta strong {
+            color: var(--ink);
+        }
+
+        .empty-card {
+            padding: 18px;
+            border-radius: var(--radius-md);
+            background: rgba(92, 105, 120, 0.08);
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .mono {
+            font-variant-numeric: tabular-nums;
+        }
+
+        .risk-mode {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--navy);
+            background: rgba(23, 50, 77, 0.08);
+        }
+
+        .risk-mode.safe {
+            color: var(--safe);
+            background: var(--safe-bg);
+        }
+
+        .risk-mode.warning {
+            color: var(--warning);
+            background: var(--warning-bg);
+        }
+
+        .risk-mode.danger {
+            color: var(--danger);
+            background: var(--danger-bg);
+        }
+
+        @keyframes rise {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(47, 125, 82, 0.24);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(47, 125, 82, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(47, 125, 82, 0);
+            }
+        }
+
+
+        .tab-content {
+            animation: fadeIn 0.3s ease;
+            margin: 0;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+
+       .tab-button {
+            background: none !important;
+            border: none !important;
+            padding: 4px 10px !important;
+            font-size: 0.75rem !important;
+            font-weight: 600 !important;
+            color: var(--muted) !important;
+            cursor: pointer !important;
+            border-radius: 4px !important;
+            transition: all 0.2s ease !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 3px !important;
+            flex: 0 0 auto !important;
+            height: 26px !important;
+            white-space: nowrap !important;
+        }
+
+        .tab-button:hover {
+            background: rgba(23, 50, 77, 0.05) !important;
+            color: var(--navy) !important;
+        }
+
+        .tab-button.active {
+            color: var(--navy) !important;
+            background: rgba(23, 50, 77, 0.08) !important;
+        }
+
+
+        @media (max-width: 1180px) {
+            .hero,
+            .monitor-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero h1 {
+                max-width: none;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+            }
+
+            .video-stage,
+            .intelligence-panel {
+                height: auto;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .upload-shell {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid,
+            .detail-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .info-scroll {
+                overflow: visible;
+                padding-right: 0;
+            }
+        }
+
+        @media (max-width: 720px) {
+            .shell {
+                width: min(100% - 18px, 1480px);
+                padding: 18px 0 28px;
+            }
+
+            .hero,
+            .panel {
+                padding: 20px;
+            }
+
+            .stats-grid,
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .video-frame,
+            #videoPlayer {
+                min-height: 300px;
+            }
+
+            .hero-badges,
+            .upload-actions {
+                align-items: stretch;
+            }
+
+            .ghost-button,
+            .primary-button {
+                width: 100%;
+                justify-content: center;
+            }
         }
     </style>
 </head>
 
 <body>
+<div class="shell">
+    <header class="surface hero">
+    <div class="hero-copy">
+        <p class="eyebrow">Behavior Intelligence Console</p>
+        <h1>Upload a video and see what the AI detects</h1>
+        <p>
+            Simply upload a video file and watch the system analyze it frame by frame.
+            The AI tracks people, recognizes their actions, and alerts you to
+            unusual behavior patterns - all without writing a single line of code.
+        </p>
 
-<h2>AI Video Detection Dashboard</h2>
-
-<div class="main-layout">
-
-    <div class="video-section">
-
-        <div class="upload-container">
-            <input type="file" id="fileInput"
-                   accept="video/mp4,video/x-m4v,video/*" />
-            <br>
-            <button onclick="uploadFile()">
-                Upload and Analyze
-            </button>
-            <div id="status"></div>
+        <div class="hero-badges">
+            <span class="badge">Upload any video</span>
+            <span class="badge">Tracks people</span>
+            <span class="badge">Recognizes actions</span>
+            <span class="badge">Alerts on anomalies</span>
+            <span class="badge">See results instantly</span>
         </div>
-
-        <img id="videoPlayer" />
-
     </div>
 
-    <div class="info-section">
 
-        <div class="dashboard">
 
-            <div class="card">
-                <h4>Tracked Persons</h4>
-                <p id="peopleSeen">0</p>
+       <div class="hero-side">
+           <article class="signal-card">
+                <span class="signal-label">Status</span>
+                <div class="signal-value">
+                    <span id="wsState" class="signal-pill online">Ready</span>
+                </div>
+                <small id="connectionNote">Upload a file to begin</small>
+            </article>
+
+            <article class="signal-card">
+                <span class="signal-label">What we're looking for</span>
+                <div class="signal-value">
+                     Suspicious behavior
+                </div>
+                <small>System watches for actions like taking items without paying.</small>
+            </article>
+
+            <article class="signal-card">
+                <span class="signal-label">How it works</span>
+                <div class="signal-value">
+                    Upload → Analyze → Results
+                </div>
+                <small>Just upload a video and the AI does the rest.</small>
+            </article>
+       </div>
+    </header>
+
+    <main class="main-grid">
+        <section class="surface panel">
+            <div class="section-head">
+                <div>
+                    <h2>Upload a new observation</h2>
+                    <p>Choose a local video file and launch a fresh inference run without leaving the page.</p>
+                </div>
             </div>
 
-            <div class="card">
-                <h4>Danger Alerts</h4>
-                <p id="dangerCount">0</p>
-            </div>
+            <div class="upload-shell">
+                <div class="upload-card">
+                    <h3>Start a new analysis run</h3>
+                    <p>
+                        The backend stores the file, clears the previous stream buffer, and starts
+                        a new background analysis job using the current inference engine.
+                    </p>
 
-            <div class="card">
-                <h4>Warning Alerts</h4>
-                <p id="warningCount">0</p>
-            </div>
+                    <div class="upload-actions">
+                        <label class="ghost-button" for="fileInput">Choose video</label>
+                        <input id="fileInput" class="visually-hidden" type="file" accept="video/mp4,video/x-m4v,video/*" />
+                        <button id="uploadButton" class="primary-button" type="button">Upload and analyze</button>
+                    </div>
 
-            <div class="card">
-                <h4>Environment</h4>
-                <p id="environment">Unknown</p>
-            </div>
+                    <div class="upload-meta">
+                        <span>Selected file:</span>
+                        <strong id="selectedFile">No file selected yet</strong>
+                    </div>
+                </div>
 
+                <div class="status-card">
+                    <span class="signal-label">Run status</span>
+                    <div id="status" class="status-chip" data-tone="neutral">
+                        Waiting for a video upload.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="monitor-grid">
+            <section class="surface panel video-stage">
+                <div class="section-head">
+                    <div>
+                        <h2>Live annotated stream</h2>
+                        <p>Bounding boxes, predicted actions, and alert state overlays stay visible here during processing.</p>
+                    </div>
+                </div>
+
+                <div class="video-frame">
+                    <img id="videoPlayer" alt="Live inference stream" />
+
+                    <div id="videoPlaceholder" class="video-placeholder">
+                        <div class="placeholder-card">
+                            <h3>Stream standing by</h3>
+                            <p>
+                                Upload a file to start the MJPEG feed. Once analysis begins, this panel
+                                will switch from placeholder mode to the live annotated stream.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="video-footer">
+                    <div class="video-stat">
+                        <span>Current source</span>
+                        <strong id="latestVideoName">No active video</strong>
+                    </div>
+                    <div class="video-stat">
+                        <span>Scene mode</span>
+                        <strong id="environmentLabel">Unknown</strong>
+                    </div>
+                    <div class="video-stat">
+                        <span>Events logged</span>
+                        <strong id="recordCount" class="mono">0</strong>
+                    </div>
+                </div>
+            </section>
+
+            <aside class="surface panel intelligence-panel">
+    <div class="section-head" style="margin-bottom: 12px;">
+        <div>
+            <h2 style="font-size: 1.1rem; margin: 0;">📊 Analysis Dashboard</h2>
         </div>
-
-        <div class="panel">
-            <h3>Latest Detection</h3>
-
-            <p><strong>Track ID:</strong>
-                <span id="latestTrack">-</span></p>
-
-            <p><strong>Action:</strong>
-                <span id="latestAction">-</span></p>
-
-            <p><strong>Confidence:</strong>
-                <span id="latestConfidence">-</span></p>
-
-            <p><strong>Alert:</strong>
-                <span id="latestAlert">-</span></p>
-        </div>
-
-        <div class="panel">
-            <h3>Scene Context</h3>
-
-            <p><strong>Environment:</strong>
-                <span id="sceneEnv">-</span></p>
-
-            <p><strong>People Seen:</strong>
-                <span id="scenePeople">-</span></p>
-
-            <p><strong>Objects:</strong>
-                <span id="sceneObjects">-</span></p>
-        </div>
-
+        <span id="riskMode" class="risk-mode">Idle</span>
     </div>
 
+    <!-- ZAKŁADKI -->
+   <div style="display: flex; gap: 3px; margin-bottom: 8px; border-bottom: 1px solid var(--line); padding-bottom: 6px; flex-wrap: wrap;">
+    <button class="tab-button active" data-tab="overview">📊 Overview</button>
+    <button class="tab-button" data-tab="people">👤 People</button>
+    <button class="tab-button" data-tab="alerts">⚠️ Alerts</button>
+    <button class="tab-button" data-tab="scene">🔍 Scene</button>
+   </div>
+
+    <div class="info-scroll">
+        <!-- ZAKŁADKA 1: Overview -->
+        <div class="tab-content active" id="tab-overview">
+            <section class="mini-section">
+                <div class="stats-grid">
+                    <article class="metric-card">
+                        <p class="metric-label">Tracked persons</p>
+                        <p id="peopleSeen" class="metric-value mono">0</p>
+                        <div class="metric-note">Unique people seen in the active scene summary.</div>
+                    </article>
+
+                    <article class="metric-card danger">
+                        <p class="metric-label">Danger alerts</p>
+                        <p id="dangerCount" class="metric-value mono">0</p>
+                        <div class="metric-note">Subjects currently escalated to danger.</div>
+                    </article>
+
+                    <article class="metric-card warning">
+                        <p class="metric-label">Warning alerts</p>
+                        <p id="warningCount" class="metric-value mono">0</p>
+                        <div class="metric-note">Subjects under active observation.</div>
+                    </article>
+
+                    <article class="metric-card">
+                        <p class="metric-label">Scene environment</p>
+                        <p id="environment" class="metric-value">-</p>
+                        <div class="metric-note">Heuristic estimate based on scene objects.</div>
+                    </article>
+                </div>
+            </section>
+
+            <section class="mini-section spotlight">
+                <div class="spotlight-header">
+                    <div>
+                        <p class="eyebrow">Primary subject</p>
+                        <h3 id="latestAction">Awaiting first detection</h3>
+                        <p id="spotlightSubtitle" class="spotlight-subtitle">
+                            The most important active subject will appear here once the stream is live.
+                        </p>
+                    </div>
+                    <div id="latestAlert" class="alert-pill safe">Safe</div>
+                </div>
+
+                <div class="detail-grid">
+                    <article class="detail-card">
+                        <span>Track ids</span>
+                        <strong id="latestTrack">-</strong>
+                    </article>
+                    <article class="detail-card">
+                        <span>Confidence</span>
+                        <strong id="latestConfidence">-</strong>
+                    </article>
+                    <article class="detail-card">
+                        <span>Current file</span>
+                        <strong id="latestFile">-</strong>
+                    </article>
+                    <article class="detail-card">
+                        <span>Scene people</span>
+                        <strong id="scenePeople">-</strong>
+                    </article>
+                    
+                </div>
+
+                <div id="sceneSummary" class="scene-summary">
+                    Upload a video to generate a scene summary and subject-level explanation.
+                </div>
+            </section>
+        </div>
+
+        <!-- ZAKŁADKA 2: People -->
+        <div class="tab-content" id="tab-people" style="display: none;">
+            <section class="mini-section">
+                <h3>Active tracks</h3>
+                <p class="mini-copy">One card per current subject from the latest processed video.</p>
+                <div id="activeTracksList" class="tracks-list">
+                    <div class="empty-card">
+                        Active subject cards will appear here when the inference engine starts producing detections.
+                    </div>
+                </div>
+            </section>
+
+            <section class="mini-section">
+                <h3>Recent detections</h3>
+                <p class="mini-copy">Latest inference records kept in a compact list instead of a separate section below the video.</p>
+                <div id="recentDetectionsList" class="detections-list">
+                    <div class="empty-card">No detections yet. Upload a file to populate this stream.</div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ZAKŁADKA 3: Alerts -->
+        <div class="tab-content" id="tab-alerts" style="display: none;">
+            <section class="mini-section">
+                <h3>Alert timeline</h3>
+                <p class="mini-copy">Recent state transitions loaded from the backend event log.</p>
+                <div id="eventsList" class="timeline-list">
+                    <div class="empty-card">No alert events yet.</div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ZAKŁADKA 4: Scene -->
+        <div class="tab-content" id="tab-scene" style="display: none;">
+            <section class="mini-section">
+                <h3>Scene Intelligence</h3>
+
+                <div class="detail-grid">
+                    <article class="detail-card">
+                        <span>Environment</span>
+                        <strong id="sceneEnv">-</strong>
+                    </article>
+                    <article class="detail-card">
+                        <span>Latest event</span>
+                        <strong id="latestEvent">No alert transitions yet</strong>
+                    </article>
+                </div>
+
+                <div class="basis-card">
+                    <span>Environment inferred from</span>
+                    <strong id="sceneBasis">Waiting for scene objects...</strong>
+                </div>
+
+                <div id="sceneObjects" class="chip-list">
+                    <span class="ghost-chip">Waiting for scene data</span>
+                </div>
+            </section>
+        </div>
+    </div>
+</aside>
+        </section>
+    </main>
 </div>
 
-<h3 style="margin-top:30px;">Live Detection Results</h3>
-
-<table>
-    <thead>
-    <tr>
-        <th>File</th>
-        <th>Track ID</th>
-        <th>Action</th>
-        <th>Confidence</th>
-        <th>Status</th>
-        <th>Warnings</th>
-        <th>Dangers</th>
-        <th>Anomaly Counter</th>
-    </tr>
-    </thead>
-
-    <tbody id="resultsTableBody">
-    <tr>
-        <td colspan="8" style="text-align:center;">
-            No data available... Upload a file to start analysis.
-        </td>
-    </tr>
-    </tbody>
-</table>
-
-<h3 style="margin-top:30px;">Alert State Changes</h3>
-
-<table>
-    <thead>
-        <tr>
-            <th>Time (s)</th>
-            <th>Track ID</th>
-            <th>Action</th>
-            <th>Change</th>
-        </tr>
-    </thead>
-
-    <tbody id="eventsTableBody">
-        <tr>
-            <td colspan="4" style="text-align:center;">
-                No alert events yet.
-            </td>
-        </tr>
-    </tbody>
-</table>
-
 <script>
+    const fileInput = document.getElementById("fileInput");
+    const uploadButton = document.getElementById("uploadButton");
+    const statusChip = document.getElementById("status");
+    const videoPlayer = document.getElementById("videoPlayer");
+    const videoPlaceholder = document.getElementById("videoPlaceholder");
+    const selectedFile = document.getElementById("selectedFile");
+    const wsState = document.getElementById("wsState");
+    const connectionNote = document.getElementById("connectionNote");
+    const recentDetectionsList = document.getElementById("recentDetectionsList");
+    const eventsList = document.getElementById("eventsList");
+    const activeTracksList = document.getElementById("activeTracksList");
+    const sceneObjects = document.getElementById("sceneObjects");
 
-async function uploadFile() {
+    const labels = {
+        peopleSeen: document.getElementById("peopleSeen"),
+        dangerCount: document.getElementById("dangerCount"),
+        warningCount: document.getElementById("warningCount"),
+        environment: document.getElementById("environment"),
+        environmentLabel: document.getElementById("environmentLabel"),
+        latestTrack: document.getElementById("latestTrack"),
+        latestAction: document.getElementById("latestAction"),
+        latestConfidence: document.getElementById("latestConfidence"),
+        latestAlert: document.getElementById("latestAlert"),
+        latestFile: document.getElementById("latestFile"),
+        latestVideoName: document.getElementById("latestVideoName"),
+        spotlightSubtitle: document.getElementById("spotlightSubtitle"),
+        sceneEnv: document.getElementById("sceneEnv"),
+        scenePeople: document.getElementById("scenePeople"),
+        sceneSummary: document.getElementById("sceneSummary"),
+        recordCount: document.getElementById("recordCount"),
+        latestEvent: document.getElementById("latestEvent"),
+        riskMode: document.getElementById("riskMode"),
+        // NOWE: Scene Basis
+        sceneBasis: document.getElementById("sceneBasis")
+    };
 
-    const fileInput = document.getElementById('fileInput');
-    const statusDiv = document.getElementById('status');
-    const videoPlayer = document.getElementById('videoPlayer');
-
-    if (fileInput.files.length === 0) {
-        statusDiv.innerText = "Please select a video file before uploading.";
-        statusDiv.style.color = "red";
-        return;
+    function escapeHtml(value) {
+        return String(value ?? "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#39;");
     }
 
-    const file = fileInput.files[0];
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    statusDiv.innerText = "Uploading file... please wait.";
-    statusDiv.style.color = "blue";
-
-    try {
-
-        const response = await fetch('/upload/', {
-            method: 'POST',
-            body: formData
-        });
-
-        if (response.ok) {
-
-            const data = await response.json();
-
-            statusDiv.innerText =
-                "Success! " + data.message;
-
-            statusDiv.style.color = "green";
-
-            videoPlayer.src =
-                "/video_feed?" + new Date().getTime();
-
-            videoPlayer.style.display = "block";
-
-        } else {
-
-            statusDiv.innerText =
-                "Error uploading file.";
-
-            statusDiv.style.color = "red";
+    function formatBytes(bytes) {
+        if (!bytes) {
+            return "0 B";
         }
 
-    } catch (error) {
+        const units = ["B", "KB", "MB", "GB"];
+        let size = bytes;
+        let unitIndex = 0;
 
-        statusDiv.innerText =
-            "A network error occurred.";
+        while (size >= 1024 && unitIndex < units.length - 1) {
+            size /= 1024;
+            unitIndex += 1;
+        }
 
-        statusDiv.style.color = "red";
+        return `${size.toFixed(size >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
     }
-}
 
-const protocol =
-    window.location.protocol === "https:"
-        ? "wss"
-        : "ws";
-
-const wsUrl =
-    `${protocol}://${window.location.host}/ws/detections`;
-
-const ws = new WebSocket(wsUrl);
-
-ws.onmessage = function(event) {
-
-    const data = JSON.parse(event.data);
-
-    const tbody =
-        document.getElementById('resultsTableBody');
-
-   if (data.length === 0) {
-
-    document.getElementById("peopleSeen").innerText = "0";
-    document.getElementById("dangerCount").innerText = "0";
-    document.getElementById("warningCount").innerText = "0";
-
-    document.getElementById("environment").innerText = "-";
-
-    document.getElementById("latestTrack").innerText = "-";
-    document.getElementById("latestAction").innerText = "-";
-    document.getElementById("latestConfidence").innerText = "-";
-    document.getElementById("latestAlert").innerText = "-";
-
-    document.getElementById("sceneEnv").innerText = "-";
-    document.getElementById("scenePeople").innerText = "-";
-    document.getElementById("sceneObjects").innerText = "-";
-
-    return;
-}
-
-    const currentTracks = {};
-
-    const currentVideo =
-    data[data.length - 1].video_source;
-
-    data
-        .filter(item => item.video_source === currentVideo)
-        .forEach(item => {
-            currentTracks[item.track_id] = item;
-        });
-
-    const activeTracks =
-        Object.values(currentTracks);
-
-    let dangerCount = 0;
-    let warningCount = 0;
-
-    activeTracks.forEach(track => {
-
-        if(track.current_alert_state === "DANGER")
-            dangerCount++;
-
-        if(track.current_alert_state === "WARNING")
-            warningCount++;
-    });
-
-    document.getElementById("dangerCount").innerText =
-        dangerCount;
-
-    document.getElementById("warningCount").innerText =
-        warningCount;
-
-
-
-if(activeTracks.length > 0){
-
-    const mostImportant =
-        activeTracks.find(t => t.current_alert_state === "DANGER")
-        || activeTracks.find(t => t.current_alert_state === "WARNING")
-        || activeTracks[0];
-
-            document.getElementById("peopleSeen").innerText =
-                mostImportant.scene.people_seen;
-
-            document.getElementById("environment").innerText =
-                mostImportant.scene.env_guess;
-
-
-            document.getElementById("sceneEnv").innerText =
-                mostImportant.scene.env_guess;
-
-            document.getElementById("scenePeople").innerText =
-                mostImportant.scene.people_seen;
-
-            document.getElementById("sceneObjects").innerText =
-                [...new Set(
-                    activeTracks.flatMap(t => t.scene.objects)
-                )].join(", ");
-
-            document.getElementById("latestTrack").innerText =
-                activeTracks.map(t => t.track_id).join(", ");
-
-            document.getElementById("latestAction").innerText =
-                activeTracks.map(t => t.final_action).join(" | ");
-
-            document.getElementById("latestConfidence").innerText =
-                activeTracks.map(t => t.confidence_score).join(" | ");
-
-            document.getElementById("latestAlert").innerText =
-                activeTracks
-                    .map(t => `${t.track_id}:${t.current_alert_state}`)
-                    .join(" | ");
+    function humanizeToken(value) {
+        if (!value) {
+            return "-";
         }
 
-    tbody.innerHTML = "";
+        return String(value)
+            .replaceAll("_", " ")
+            .replace(/\b\w/g, (char) => char.toUpperCase());
+    }
 
-    [...data].reverse().forEach(item => {
+    function severityScore(alertState) {
+        if (alertState === "DANGER") {
+            return 2;
+        }
+        if (alertState === "WARNING") {
+            return 1;
+        }
+        return 0;
+    }
 
-        const tr = document.createElement('tr');
+    function alertClass(alertState) {
+        if (alertState === "DANGER") {
+            return "danger";
+        }
+        if (alertState === "WARNING") {
+            return "warning";
+        }
+        return "safe";
+    }
 
-        tr.innerHTML = `
-            <td>${item.video_source}</td>
-            <td>${item.track_id}</td>
-            <td>${item.final_action}</td>
-            <td>${item.confidence_score}</td>
+    function setStatus(message, tone) {
+        statusChip.textContent = message;
+        statusChip.dataset.tone = tone;
+    }
 
-            <td class="${item.current_alert_state}">
-                ${item.current_alert_state}
-            </td>
+    function setConnectionState(state, note) {
+    wsState.className = `signal-pill ${state}`;
+    // Zmiana tekstu z "Live" na "Ready"
+    wsState.textContent = state === "online" ? "Ready"
+        : state === "offline" ? "Disconnected"
+        : "Connecting";
+    connectionNote.textContent = note;
+}
 
-            <td>${item.warning_count}</td>
-            <td>${item.danger_count}</td>
-            <td>${item.anomaly_counter}</td>
+    function setAlertPill(alertState) {
+        const state = alertState || "SAFE";
+        labels.latestAlert.className = `alert-pill ${alertClass(state)}`;
+        labels.latestAlert.textContent = state;
+    }
+
+    function updateRiskMode(dangerCount, warningCount, activeTrackCount) {
+        let label = "Idle";
+        let tone = "";
+
+        if (dangerCount > 0) {
+            label = "High risk";
+            tone = "danger";
+        } else if (warningCount > 0) {
+            label = "Observe";
+            tone = "warning";
+        } else if (activeTrackCount > 0) {
+            label = "Nominal";
+            tone = "safe";
+        }
+
+        labels.riskMode.className = `risk-mode ${tone}`.trim();
+        labels.riskMode.textContent = label;
+    }
+
+    function resetSummary() {
+        labels.peopleSeen.textContent = "0";
+        labels.dangerCount.textContent = "0";
+        labels.warningCount.textContent = "0";
+        labels.environment.textContent = "-";
+        labels.environmentLabel.textContent = "Unknown";
+        labels.latestTrack.textContent = "-";
+        labels.latestAction.textContent = "Awaiting first detection";
+        labels.latestConfidence.textContent = "-";
+        labels.latestFile.textContent = "-";
+        labels.latestVideoName.textContent = "No active video";
+        labels.spotlightSubtitle.textContent = "The most important active subject will appear here once the stream is live.";
+        labels.sceneEnv.textContent = "-";
+        labels.scenePeople.textContent = "-";
+        labels.sceneSummary.textContent = "Upload a video to generate a scene summary and subject-level explanation.";
+        labels.recordCount.textContent = "0";
+        // NOWE: Reset scene basis
+        labels.sceneBasis.textContent = "Waiting for scene objects...";
+        setAlertPill("SAFE");
+        updateRiskMode(0, 0, 0);
+
+        sceneObjects.innerHTML = '<span class="ghost-chip">Waiting for scene data</span>';
+        activeTracksList.innerHTML = `
+            <div class="empty-card">
+                Active subject cards will appear here when the inference engine starts producing detections.
+            </div>
         `;
+        recentDetectionsList.innerHTML = `
+            <div class="empty-card">
+                No detections yet. Upload a file to populate this stream.
+            </div>
+        `;
+    }
 
-        tbody.appendChild(tr);
-    });
-};
+    function updateSelectedFileLabel() {
+        const file = fileInput.files[0];
+        if (!file) {
+            selectedFile.textContent = "No file selected yet";
+            return;
+        }
 
-async function loadAlertEvents() {
+        selectedFile.textContent = `${file.name} (${formatBytes(file.size)})`;
+    }
 
-    try {
+    function renderSceneObjects(objects) {
+        if (!objects.length) {
+            sceneObjects.innerHTML = '<span class="ghost-chip">No scene objects reported yet</span>';
+            return;
+        }
 
-        const response =
-            await fetch("/alert-events");
+        sceneObjects.innerHTML = objects
+            .map((item) => `<span class="chip">${escapeHtml(humanizeToken(item))}</span>`)
+            .join("");
+    }
 
-        const events =
-            await response.json();
+    function renderTrackCards(activeTracks) {
+        if (!activeTracks.length) {
+            activeTracksList.innerHTML = `
+                <div class="empty-card">
+                    The latest processed video does not expose any active tracks yet.
+                </div>
+            `;
+            return;
+        }
 
-        const tbody =
-            document.getElementById("eventsTableBody");
+        activeTracksList.innerHTML = activeTracks
+            .map((track) => {
+                const state = track.current_alert_state || "SAFE";
+                return `
+                    <article class="track-card" data-alert="${escapeHtml(alertClass(state))}">
+                        <div class="track-top">
+                            <p class="track-name">Track #${escapeHtml(track.track_id)}</p>
+                            <span class="alert-pill ${escapeHtml(alertClass(state))}">${escapeHtml(state)}</span>
+                        </div>
+                        <p class="track-meta">
+                            <strong>${escapeHtml(humanizeToken(track.final_action))}</strong><br />
+                            Confidence: ${escapeHtml(track.confidence_score || "-")}<br />
+                            Warnings: ${escapeHtml(track.warning_count ?? 0)} | Dangers: ${escapeHtml(track.danger_count ?? 0)}
+                        </p>
+                    </article>
+                `;
+            })
+            .join("");
+    }
 
-        tbody.innerHTML = "";
+    function renderDetectionCards(history) {
+        if (!history.length) {
+            recentDetectionsList.innerHTML = `
+                <div class="empty-card">
+                    No detection records yet.
+                </div>
+            `;
+            return;
+        }
 
-        if(events.length === 0){
+        const rows = history.slice(-14).reverse();
+        recentDetectionsList.innerHTML = rows
+            .map((item) => {
+                const state = item.current_alert_state || "SAFE";
+                return `
+                    <article class="detection-card" data-alert="${escapeHtml(alertClass(state))}">
+                        <div class="detection-top">
+                            <p class="detection-name">${escapeHtml(humanizeToken(item.final_action || "-"))}</p>
+                            <span class="alert-pill ${escapeHtml(alertClass(state))}">${escapeHtml(state)}</span>
+                        </div>
+                        <p class="detection-meta">
+                            <strong>${escapeHtml(item.video_source || "-")}</strong><br />
+                            Track: #${escapeHtml(item.track_id ?? "-")} | Confidence: ${escapeHtml(item.confidence_score || "-")}<br />
+                            Warnings: ${escapeHtml(item.warning_count ?? 0)} | Dangers: ${escapeHtml(item.danger_count ?? 0)} | Anomaly: ${escapeHtml(item.anomaly_counter ?? 0)}
+                        </p>
+                    </article>
+                `;
+            })
+            .join("");
+    }
 
-    tbody.innerHTML = `
-        <tr>
-            <td colspan="4" style="text-align:center;">
-                No alert events
-            </td>
-        </tr>
-    `;
+    function renderAlertEvents(events) {
+        if (!events.length) {
+            eventsList.innerHTML = '<div class="empty-card">No alert events yet.</div>';
+            labels.latestEvent.textContent = "No alert transitions yet";
+            return;
+        }
 
-    return;
-}
+        const latest = events[events.length - 1];
+        labels.latestEvent.textContent = `${latest.from_state || "SAFE"} -> ${latest.to_state || "SAFE"}`;
 
-        [...events].reverse().forEach(event => {
+        eventsList.innerHTML = events
+            .slice(-12)
+            .reverse()
+            .map((event) => {
+                const tone = alertClass(event.to_state || "SAFE");
+                const timeLabel = event.time ?? 0;
 
-            const tr = document.createElement("tr");
+                return `
+                    <article class="event-card" data-alert="${escapeHtml(tone)}">
+                        <div class="event-top">
+                            <p class="event-name">Track #${escapeHtml(event.track_id ?? "-")}</p>
+                            <span class="alert-pill ${escapeHtml(tone)}">${escapeHtml(event.to_state || "SAFE")}</span>
+                        </div>
+                        <p class="event-meta">
+                            Action: ${escapeHtml(humanizeToken(event.action || "-"))}<br />
+                            Transition: ${escapeHtml(event.from_state || "SAFE")} -> ${escapeHtml(event.to_state || "SAFE")}<br />
+                            Time: ${escapeHtml(timeLabel)}s
+                        </p>
+                    </article>
+                `;
+            })
+            .join("");
+    }
 
-            tr.innerHTML = `
-                <td>${event.time}</td>
-                <td>${event.track_id}</td>
-                <td>${event.action}</td>
-                <td>${event.from_state} → ${event.to_state}</td>
+    function updateDashboard(history) {
+        if (!Array.isArray(history) || history.length === 0) {
+            resetSummary();
+            return;
+        }
+
+        renderDetectionCards(history);
+
+        const latestVideo = history[history.length - 1].video_source;
+        const currentTracks = {};
+
+        history
+            .filter((item) => item.video_source === latestVideo)
+            .forEach((item) => {
+                currentTracks[item.track_id] = item;
+            });
+
+        const activeTracks = Object.values(currentTracks).sort((left, right) => {
+            const severityDelta = severityScore(right.current_alert_state) - severityScore(left.current_alert_state);
+            if (severityDelta !== 0) {
+                return severityDelta;
+            }
+            return Number(left.track_id) - Number(right.track_id);
+        });
+
+        const primary = activeTracks[0] || history[history.length - 1];
+        const scene = primary.scene || {};
+        const uniqueObjects = [...new Set(activeTracks.flatMap((track) => Array.isArray(track.scene?.objects) ? track.scene.objects : []))];
+        const dangerCount = activeTracks.filter((track) => track.current_alert_state === "DANGER").length;
+        const warningCount = activeTracks.filter((track) => track.current_alert_state === "WARNING").length;
+        const environment = scene.env_guess || "unknown";
+        const summaryText = scene.scene_summ || "Scene summary will appear here once enough frames have been processed.";
+
+        labels.peopleSeen.textContent = String(scene.people_seen ?? activeTracks.length ?? 0);
+        labels.dangerCount.textContent = String(dangerCount);
+        labels.warningCount.textContent = String(warningCount);
+        labels.environment.textContent = humanizeToken(environment);
+        labels.environmentLabel.textContent = humanizeToken(environment);
+        labels.latestTrack.textContent = activeTracks.map((track) => `#${track.track_id}`).join(", ") || "-";
+        labels.latestAction.textContent = activeTracks.map((track) => humanizeToken(track.final_action)).join(" / ") || "Awaiting first detection";
+        labels.latestConfidence.textContent = activeTracks.map((track) => track.confidence_score || "-").join(" / ") || "-";
+        labels.latestFile.textContent = latestVideo || "-";
+        labels.latestVideoName.textContent = latestVideo || "No active video";
+        labels.spotlightSubtitle.textContent = `Most relevant state is currently driven by ${activeTracks.length} active tracked subject(s).`;
+        labels.sceneEnv.textContent = humanizeToken(environment);
+        labels.scenePeople.textContent = String(scene.people_seen ?? 0);
+        labels.sceneSummary.textContent = summaryText;
+        labels.recordCount.textContent = String(history.filter((item) => item.video_source === latestVideo).length);
+
+        // NOWE: Ustaw podstawę wnioskowania środowiska
+        const basisText = uniqueObjects.length > 0
+            ? uniqueObjects.map(obj => humanizeToken(obj)).join(", ")
+            : "No objects detected yet";
+        labels.sceneBasis.textContent = basisText;
+
+        setAlertPill(primary.current_alert_state || "SAFE");
+        updateRiskMode(dangerCount, warningCount, activeTracks.length);
+        renderSceneObjects(uniqueObjects);
+        renderTrackCards(activeTracks);
+    }
+
+    async function uploadFile() {
+        const file = fileInput.files[0];
+
+        if (!file) {
+            setStatus("Please select a video file before uploading.", "danger");
+            return;
+        }
+
+        // ===== CZYSZCZENIE PRZED NOWYM UPLOADEM =====
+            console.log("🧹 Czyszczenie danych przed nowym uploadem...");
+
+            // Wyczyść dashboard
+            resetSummary();
+
+            // Wyczyść wideo
+            videoPlayer.style.display = "none";
+            videoPlayer.src = "";
+            videoPlaceholder.style.display = "grid";
+
+            // Wyczyść listy (opcjonalnie, bo resetSummary już to robi)
+            document.getElementById('activeTracksList').innerHTML = `
+                <div class="empty-card">
+                    Processing video... Active subjects will appear soon.
+                </div>
+            `;
+            document.getElementById('recentDetectionsList').innerHTML = `
+                <div class="empty-card">
+                    Processing video... Detections will appear soon.
+                </div>
+            `;
+            document.getElementById('eventsList').innerHTML = `
+                <div class="empty-card">
+                    No alert events yet.
+                </div>
+            `;
+            document.getElementById('sceneObjects').innerHTML = `
+                <span class="ghost-chip">Waiting for scene data</span>
             `;
 
-            tbody.appendChild(tr);
-        });
+            // Zresetuj status
+            setStatus("Uploading and processing new video...", "warning");
 
-    } catch(error) {
-        console.error("Error loading alert events:", error);
+            uploadButton.disabled = true;
+            uploadButton.textContent = "Analyzing...";
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+
+        try {
+            const response = await fetch("/upload/", {
+                method: "POST",
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`Upload failed with status ${response.status}`);
+            }
+
+            const payload = await response.json();
+            setStatus(payload.message || "Upload completed and analysis started.", "success");
+
+            labels.latestVideoName.textContent = file.name;
+            labels.latestFile.textContent = file.name;
+            videoPlaceholder.style.display = "none";
+            videoPlayer.style.display = "block";
+            videoPlayer.src = `/video_feed?ts=${Date.now()}`;
+        } catch (error) {
+            setStatus("The upload could not be completed. Please try again.", "danger");
+            console.error(error);
+        } finally {
+            uploadButton.disabled = false;
+            uploadButton.textContent = "Upload and analyze";
+        }
     }
-}
 
-ws.onclose = function() {
-    console.log("WebSocket connection closed.");
-};
+    async function loadAlertEvents() {
+        try {
+            const response = await fetch("/alert-events");
+            const events = await response.json();
+            renderAlertEvents(Array.isArray(events) ? events : []);
+        } catch (error) {
+            console.error("Error loading alert events:", error);
+        }
+    }
 
-loadAlertEvents();
-setInterval(loadAlertEvents, 1000);
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+    const wsUrl = `${protocol}://${window.location.host}/ws/detections`;
+    const ws = new WebSocket(wsUrl);
 
+    ws.onopen = function () {
+        setConnectionState("online", "System is ready to analyze your video");
+    };
+
+    ws.onmessage = function (event) {
+        const data = JSON.parse(event.data);
+        updateDashboard(Array.isArray(data) ? data : []);
+    };
+
+    ws.onerror = function () {
+        setConnectionState("offline", "The stream reported an error. Reconnect may be required.");
+    };
+
+    ws.onclose = function () {
+        setConnectionState("offline", "The detection stream is currently disconnected.");
+    };
+
+    fileInput.addEventListener("change", updateSelectedFileLabel);
+    uploadButton.addEventListener("click", uploadFile);
+    videoPlayer.addEventListener("error", () => {
+        setStatus("The video stream is not available yet. The analysis may still be warming up.", "warning");
+    });
+
+      // ===== ŁADOWANIE POCZĄTKOWE =====
+    loadAlertEvents();
+    setInterval(loadAlertEvents, 1500);
+
+    // ===== OBSŁUGA ZAKŁADEK =====
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = {
+        overview: document.getElementById('tab-overview'),
+        people: document.getElementById('tab-people'),
+        alerts: document.getElementById('tab-alerts'),
+        scene: document.getElementById('tab-scene')
+    };
+
+    tabButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+
+            Object.values(tabContents).forEach(content => {
+                if (content) content.style.display = 'none';
+            });
+
+            const tabId = this.dataset.tab;
+            if (tabContents[tabId]) {
+                tabContents[tabId].style.display = 'block';
+            }
+        });
+    });
+
+    // Aktywuj pierwszą zakładkę
+    const activeTab = document.querySelector('.tab-button.active');
+    if (activeTab) activeTab.click();
+
+    // ===== CZYSTY START =====
+    resetSummary();
+    videoPlayer.style.display = "none";
+    videoPlayer.src = "";
+    videoPlaceholder.style.display = "grid";
+    console.log("🧹 Dashboard gotowy do pracy");
 </script>
-
 </body>
 </html>

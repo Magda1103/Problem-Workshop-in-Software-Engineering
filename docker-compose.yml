@@ -7,6 +7,12 @@ services:
       - ./data:/app/data
       - ./models:/app/models
       - ./frontend:/app/frontend
+      - clip_cache:/app/clip_cache
+    environment:
+      CLIP_CACHE_DIR: /app/clip_cache
     command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000
     ports:
       - "8001:8000"
+
+volumes:
+  clip_cache:

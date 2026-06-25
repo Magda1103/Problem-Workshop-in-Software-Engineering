@@ -1,8 +1,8 @@
 {
   "HEIGHT": 244,
   "WIDTH": 224,
-  "FRAMES_COUNT": 16,
+  "FRAMES_COUNT": 20,
   "FRAME_STEP": 5,
-  "BATCH_SIZE": 4,
+  "BATCH_SIZE": 2,
   "EPOCHS": 5
 }

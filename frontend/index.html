@@ -442,6 +442,25 @@
             pointer-events: none;
         }
 
+                /* Przycinanie długich nazw plików */
+        .video-stat strong,
+        .detail-card strong,
+        #latestFile,
+        #latestVideoName {
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: block;
+        }
+
+        /* Dla dłuższych nazw - pozwól na zawijanie */
+        .detail-card strong {
+            white-space: normal;
+            word-break: break-all;
+            font-size: 0.85rem;
+        }
+
         #videoPlayer {
             display: none;
             width: 100%;
@@ -1079,7 +1098,10 @@
                 <div class="video-footer">
                     <div class="video-stat">
                         <span>Current source</span>
-                        <strong id="latestVideoName">No active video</strong>
+                        <strong id="latestVideoName" style="
+                            word-break: break-all;
+                            font-size: 0.85rem;
+                        ">No active video</strong>
                     </div>
                     <div class="video-stat">
                         <span>Environment</span>
@@ -1162,7 +1184,14 @@
                     </article>
                     <article class="detail-card">
                         <span>Current file</span>
-                        <strong id="latestFile">-</strong>
+                        <strong id="latestFile" style="
+                            max-width: 140px;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                            white-space: nowrap;
+                            display: inline-block;
+                            font-size: 0.8rem;
+                        ">-</strong>
                     </article>
                     <article class="detail-card">
                         <span>Scene people</span>
@@ -1564,9 +1593,16 @@
         labels.latestTrack.textContent = activeTracks.map((track) => `#${track.track_id}`).join(", ") || "-";
         labels.latestAction.textContent = activeTracks.map((track) => humanizeToken(track.final_action)).join(" / ") || "Awaiting first detection";
         labels.latestConfidence.textContent = activeTracks.map((track) => track.confidence_score || "-").join(" / ") || "-";
-        labels.latestFile.textContent = latestVideo || "-";
-        labels.latestVideoName.textContent = latestVideo || "No active video";
-        labels.spotlightSubtitle.textContent = `Most relevant state is currently driven by ${activeTracks.length} active tracked subject(s).`;
+        const fullName = latestVideo || '-';
+        const shortName = fullName.split('/').pop().split('\\').pop() || '-';
+        labels.latestVideoName.textContent = fullName;
+        labels.latestVideoName.title = fullName;
+        labels.latestFile.textContent = shortName;
+        labels.latestFile.title = fullName;
+        let subtitle = `${activeTracks.length} person(s) tracked`;
+        if (dangerCount > 0) subtitle += `, ${dangerCount} in danger`;
+        if (warningCount > 0) subtitle += `, ${warningCount} under observation`;
+        labels.spotlightSubtitle.textContent = subtitle + '.';
         labels.sceneEnv.textContent = humanizeToken(environment);
         labels.scenePeople.textContent = String(scene.people_seen ?? 0);
         labels.sceneSummary.textContent = summaryText;
@@ -1646,8 +1682,11 @@
             const payload = await response.json();
             setStatus(payload.message || "Upload completed and analysis started.", "success");
 
+           const shortFileName = file.name.split('/').pop().split('\\').pop() || file.name;
             labels.latestVideoName.textContent = file.name;
-            labels.latestFile.textContent = file.name;
+            labels.latestVideoName.title = file.name;
+            labels.latestFile.textContent = shortFileName;
+            labels.latestFile.title = file.name;
             videoPlaceholder.style.display = "none";
             videoPlayer.style.display = "block";
             videoPlayer.src = `/video_feed?ts=${Date.now()}`;

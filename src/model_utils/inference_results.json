@@ -106,5 +106,43 @@
             "people_seen": 1,
             "scene_summ": "Environment: outdoors, people seen: 1, surroundings: skateboard"
         }
+    },
+    {
+        "video_source": "A_realistic_surveillance_style-4.mp4",
+        "track_id": 1,
+        "final_action": "person_steals_object",
+        "confidence_score": "56.78%",
+        "current_alert_state": "WARNING",
+        "max_alert_state": "WARNING",
+        "anomaly_counter": 1,
+        "danger_count": 0,
+        "warning_count": 1,
+        "scene": {
+            "objects": [
+                "skateboard"
+            ],
+            "env_guess": "outdoors",
+            "people_seen": 1,
+            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: skateboard"
+        }
+    },
+    {
+        "video_source": "A_realistic_surveillance_style-4.mp4",
+        "track_id": 1,
+        "final_action": "person_steals_object",
+        "confidence_score": "57.59%",
+        "current_alert_state": "WARNING",
+        "max_alert_state": "WARNING",
+        "anomaly_counter": 2,
+        "danger_count": 0,
+        "warning_count": 1,
+        "scene": {
+            "objects": [
+                "skateboard"
+            ],
+            "env_guess": "outdoors",
+            "people_seen": 1,
+            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: skateboard"
+        }
     }
 ]

@@ -18,6 +18,8 @@ Final project documentation for **Problem Workshop in Software Engineering**.
 - [API Endpoints](#api-endpoints)
 - [Docker Usage](#docker-usage)
 - [Project Structure](#project-structure)
+- [Important Output Files](#important-output-files)
+- [Testing](#testing)
 - [Known Limitations](#known-limitations)
 - [Recommended Improvements](#recommended-improvements)
 - [Team](#team)
@@ -150,9 +152,9 @@ src/model_utils/model_settings.json
 {
   "HEIGHT": 244,
   "WIDTH": 224,
-  "FRAMES_COUNT": 16,
+  "FRAMES_COUNT": 20,
   "FRAME_STEP": 5,
-  "BATCH_SIZE": 4,
+  "BATCH_SIZE": 2,
   "EPOCHS": 5
 }
 ```
@@ -166,7 +168,7 @@ Input tensor shape:
 Current example:
 
 ```text
-(B, 3, 16, 244, 224)
+(B, 3, 20, 244, 224)
 ```
 
 ## Dataset and Classes
@@ -231,7 +233,8 @@ src/model_utils/fine_tuning.py
 The fine-tuning pipeline:
 
 - uses 4 selected classes,
-- selects a balanced subset of 1000 samples,
+- currently uses all available samples from the selected classes (`FINE_TUNE_SAMPLES = None`),
+- can still use a balanced subset if `FINE_TUNE_SAMPLES` is set to a number,
 - uses deterministic random seeds,
 - loads compatible weights from `models/best_model.pth`,
 - skips incompatible final classifier weights,
@@ -270,7 +273,7 @@ Best recorded baseline validation accuracy:
 
 ### Fine-Tuning Results
 
-Recorded fine-tuning results from `models/fine_tuning_stats.txt`:
+Previous recorded fine-tuning results:
 
 | Epoch | Loss | Train Accuracy | Validation Accuracy |
 |---:|---:|---:|---:|
@@ -285,6 +288,8 @@ Best fine-tuning validation accuracy:
 ```text
 0.7900
 ```
+
+Note: `models/fine_tuning_stats.txt` is overwritten at the start of every new fine-tuning run. If a run is restarted and interrupted early, the file may contain only the CSV header even though `models/fine_tuned_model.pth` still contains the last saved best model weights.
 
 ### Result Summary
 
@@ -491,11 +496,15 @@ Run fine-tuning:
 docker compose run --rm api python -m src.model_utils.fine_tuning
 ```
 
+The model is saved only when validation accuracy improves. If training is stopped during an epoch, the last fully saved best model remains in `models/fine_tuned_model.pth`.
+
 Run command-line inference:
 
 ```bash
 docker compose run --rm api python -m src.model_utils.inference_engine --video path/to/video.mp4
 ```
+
+The Compose file also defines a `clip_cache` named volume reserved for optional cache experiments. The current fine-tuning path does not rely on this cache by default.
 
 ## Project Structure
 

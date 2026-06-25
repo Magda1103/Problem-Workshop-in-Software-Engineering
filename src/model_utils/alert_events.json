@@ -1,1 +1,9 @@
-[]
+[
+    {
+        "time": 9.62,
+        "track_id": 1,
+        "action": "person_steals_object",
+        "from_state": "SAFE",
+        "to_state": "WARNING"
+    }
+]

@@ -1002,7 +1002,7 @@
                 <div class="signal-value">
                      Suspicious behavior
                 </div>
-                <small>System watches for actions like taking items without paying.</small>
+                <small>System watches for actions like taking items.</small>
             </article>
 
             <article class="signal-card">
@@ -1019,17 +1019,17 @@
         <section class="surface panel">
             <div class="section-head">
                 <div>
-                    <h2>Upload a new observation</h2>
-                    <p>Choose a local video file and launch a fresh inference run without leaving the page.</p>
+                    <h2>Upload a new video</h2>
+                    <p>Pick a file from your computer and start the analysis.</p>
                 </div>
             </div>
 
             <div class="upload-shell">
                 <div class="upload-card">
-                    <h3>Start a new analysis run</h3>
+                    <h3>Start a new analysis </h3>
                     <p>
-                        The backend stores the file, clears the previous stream buffer, and starts
-                        a new background analysis job using the current inference engine.
+                            The system saves the file, clears old data, and starts analyzing
+                          in the background. Results will show up on the dashboard.
                     </p>
 
                     <div class="upload-actions">
@@ -1045,7 +1045,7 @@
                 </div>
 
                 <div class="status-card">
-                    <span class="signal-label">Run status</span>
+                    <span class="signal-label">Status</span>
                     <div id="status" class="status-chip" data-tone="neutral">
                         Waiting for a video upload.
                     </div>
@@ -1057,8 +1057,8 @@
             <section class="surface panel video-stage">
                 <div class="section-head">
                     <div>
-                        <h2>Live annotated stream</h2>
-                        <p>Bounding boxes, predicted actions, and alert state overlays stay visible here during processing.</p>
+                        <h2>Annotated stream</h2>
+                        <p>Watch the video with boxes around people, their actions, and any alerts.</p>
                     </div>
                 </div>
 
@@ -1067,11 +1067,11 @@
 
                     <div id="videoPlaceholder" class="video-placeholder">
                         <div class="placeholder-card">
-                            <h3>Stream standing by</h3>
-                            <p>
-                                Upload a file to start the MJPEG feed. Once analysis begins, this panel
-                                will switch from placeholder mode to the live annotated stream.
-                            </p>
+                            <h3>Upload a file to get started</h3>
+                                <p>
+                                    Pick a video and the analysis will start. The stream with annotations
+                                    will appear here once it's ready.
+                                </p>
                         </div>
                     </div>
                 </div>
@@ -1082,7 +1082,7 @@
                         <strong id="latestVideoName">No active video</strong>
                     </div>
                     <div class="video-stat">
-                        <span>Scene mode</span>
+                        <span>Environment</span>
                         <strong id="environmentLabel">Unknown</strong>
                     </div>
                     <div class="video-stat">
@@ -1181,7 +1181,7 @@
         <div class="tab-content" id="tab-people" style="display: none;">
             <section class="mini-section">
                 <h3>Active tracks</h3>
-                <p class="mini-copy">One card per current subject from the latest processed video.</p>
+                <p class="mini-copy">Each person detected in the video gets their own card.</p>
                 <div id="activeTracksList" class="tracks-list">
                     <div class="empty-card">
                         Active subject cards will appear here when the inference engine starts producing detections.
@@ -1191,7 +1191,7 @@
 
             <section class="mini-section">
                 <h3>Recent detections</h3>
-                <p class="mini-copy">Latest inference records kept in a compact list instead of a separate section below the video.</p>
+                <p class="mini-copy">A short list of the latest detections.</p>
                 <div id="recentDetectionsList" class="detections-list">
                     <div class="empty-card">No detections yet. Upload a file to populate this stream.</div>
                 </div>
@@ -1201,8 +1201,8 @@
         <!-- ZAKŁADKA 3: Alerts -->
         <div class="tab-content" id="tab-alerts" style="display: none;">
             <section class="mini-section">
-                <h3>Alert timeline</h3>
-                <p class="mini-copy">Recent state transitions loaded from the backend event log.</p>
+                <h3>Alert history</h3>
+                <p class="mini-copy">Shows when and why the alert status changed.</p>
                 <div id="eventsList" class="timeline-list">
                     <div class="empty-card">No alert events yet.</div>
                 </div>

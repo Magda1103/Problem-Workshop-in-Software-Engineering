@@ -193,26 +193,33 @@ When a video is uploaded, the backend saves it, clears previous logs, and starts
 ```mermaid
 sequenceDiagram
     participant User
-    participant Frontend
-    participant API
-    participant Engine as InferenceEngine
-    participant YOLO
-    participant Model as Action Model
-    participant Logs as JSON Logs
+    participant Frontend as Frontend Dashboard
+    participant Backend as FastAPI Backend
+    participant Engine as Inference Engine
+    participant Models as AI Models
+    participant AlertLogic as Alert Logic
+    participant Storage as File Storage
 
     User->>Frontend: Select and upload video
-    Frontend->>API: POST /upload/
-    API->>API: Save video file
-    API->>Logs: Clear previous logs
-    API->>Engine: Start background analysis
-    Engine->>YOLO: Track people and detect scene objects
-    Engine->>Model: Classify action windows
-    Model-->>Engine: Raw action + confidence
-    Engine->>Engine: Filter and smooth predictions
-    Engine->>Engine: Update alert state
-    Engine->>Logs: Save detection and alert data
-    Engine-->>Frontend: Stream annotated frames via /video_feed
-    Logs-->>Frontend: Detection updates via WebSocket
+    Frontend->>Backend: Upload video
+    Backend->>Storage: Save uploaded video
+    Backend->>Storage: Clear previous JSON logs
+    Backend->>Engine: Start background analysis
+
+    Engine->>Storage: Read uploaded video
+    loop For video frames and action windows
+        Engine->>Models: Detect people and classify actions
+        Models-->>Engine: Detections, action, confidence
+        Engine->>Engine: Filter and smooth predictions
+        Engine->>AlertLogic: Update alert state
+        AlertLogic-->>Engine: Current alert state
+        Engine->>Storage: Write detection and alert logs
+    end
+
+    Frontend->>Backend: Request stream and detection updates
+    Backend->>Engine: Read latest annotated frame
+    Backend->>Storage: Read JSON logs
+    Backend-->>Frontend: Return video stream and results
 ```
 
 ## Model Architecture

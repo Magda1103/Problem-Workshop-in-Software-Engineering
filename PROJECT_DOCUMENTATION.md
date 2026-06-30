@@ -151,7 +151,7 @@ data/videos/<class_name>/
 
 ## System Architecture
 
-The system is organized as a small set of cooperating components. The diagram below uses a simplified GitHub-compatible Mermaid component view.
+The system is organized as a small set of cooperating components.
 
 The main component groups are:
 
@@ -188,7 +188,7 @@ flowchart LR
 
 ## Runtime Data Flow
 
-When a video is uploaded, the backend saves it, clears previous logs, and starts background analysis. The inference engine reads frames from the uploaded video, detects people, tracks them, creates frame windows, classifies actions, applies post-processing, updates alert states, and streams annotated frames back to the frontend.
+When a video is uploaded, the FastAPI backend saves it, clears previous JSON logs, and starts background analysis. The inference engine reads the uploaded video, processes frames, detects and tracks people, creates action windows, uses the AI models to classify actions, applies post-processing, updates alert states through the alert logic, and writes detection and alert data to JSON logs. The frontend receives the annotated video stream and detection updates through the backend.
 
 ```mermaid
 sequenceDiagram

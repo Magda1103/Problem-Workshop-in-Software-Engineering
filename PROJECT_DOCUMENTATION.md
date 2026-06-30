@@ -174,13 +174,16 @@ flowchart LR
     Storage[("File Storage<br/>uploaded videos<br/>JSON logs")]
 
     User --> Frontend
-    Frontend <--> Backend
-    Backend --> Engine
-    Backend --> Storage
-    Engine --> Models
-    Engine --> AlertLogic
-    Engine --> Storage
-    Training --> Models
+    Frontend <-->|upload, stream, results| Backend
+
+    Backend -->|starts analysis| Engine
+    Backend -->|saves uploads / reads logs| Storage
+
+    Engine -->|uses| Models
+    Engine -->|uses| AlertLogic
+    Engine -->|writes results| Storage
+
+    Training -.->|trains model weights| Models
 ```
 
 ## Runtime Data Flow

@@ -151,7 +151,7 @@ data/videos/<class_name>/
 
 ## System Architecture
 
-The system is organized as a small set of cooperating components. The diagram below uses GitHub-compatible Mermaid syntax with UML-style component notation, without expanding every endpoint or internal method.
+The system is organized as a small set of cooperating components. The diagram below uses a simplified GitHub-compatible Mermaid component view.
 
 The main component groups are:
 
@@ -168,35 +168,19 @@ flowchart LR
     Frontend["&lt;&lt;component&gt;&gt;<br/>Frontend Dashboard<br/>frontend/index.html"]
     Backend["&lt;&lt;component&gt;&gt;<br/>FastAPI Backend<br/>src/api/main.py"]
     Engine["&lt;&lt;component&gt;&gt;<br/>Inference Engine<br/>src/model_utils/inference_engine.py"]
-    Yolo["&lt;&lt;component&gt;&gt;<br/>YOLOv8 Models"]
-    ActionModel["&lt;&lt;component&gt;&gt;<br/>Action Recognition Model<br/>models/fine_tuned_model.pth"]
+    Models["&lt;&lt;component&gt;&gt;<br/>AI Models<br/>YOLOv8 + action model"]
     AlertLogic["&lt;&lt;component&gt;&gt;<br/>Alert Logic<br/>src/model_utils/alert_logic.py"]
     Training["&lt;&lt;component&gt;&gt;<br/>Offline Training Pipeline<br/>dataset_utils, fine_tuning.py"]
     Storage[("File Storage<br/>uploaded videos<br/>JSON logs")]
 
-    DashboardAPI(("Dashboard API"))
-    AnalysisService(("Analysis Service"))
-    StorageAccess(("Storage Access"))
-    ModelWeights(("Model Weights"))
-
     User --> Frontend
-
-    Frontend -.-> DashboardAPI
-    DashboardAPI --- Backend
-
-    Backend -.-> AnalysisService
-    AnalysisService --- Engine
-
-    Backend -.-> StorageAccess
-    Engine -.-> StorageAccess
-    StorageAccess --- Storage
-
-    Engine -->|detects and tracks| Yolo
-    Engine -->|classifies actions| ActionModel
-    Engine -->|updates alerts| AlertLogic
-
-    Training -.-> ModelWeights
-    ModelWeights --- ActionModel
+    Frontend <--> Backend
+    Backend --> Engine
+    Backend --> Storage
+    Engine --> Models
+    Engine --> AlertLogic
+    Engine --> Storage
+    Training --> Models
 ```
 
 ## Runtime Data Flow

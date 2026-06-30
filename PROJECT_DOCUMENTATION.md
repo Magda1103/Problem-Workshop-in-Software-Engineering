@@ -207,6 +207,7 @@ sequenceDiagram
     Backend->>Engine: Start background analysis
 
     Engine->>Storage: Read uploaded video
+    Storage-->>Engine: Uploaded video
     loop For video frames and action windows
         Engine->>Models: Detect people and classify actions
         Models-->>Engine: Detections, action, confidence
@@ -218,7 +219,9 @@ sequenceDiagram
 
     Frontend->>Backend: Request stream and detection updates
     Backend->>Engine: Read latest annotated frame
+    Engine-->>Backend: Latest annotated frame
     Backend->>Storage: Read JSON logs
+    Storage-->>Backend: Detection and alert logs
     Backend-->>Frontend: Return video stream and results
 ```
 

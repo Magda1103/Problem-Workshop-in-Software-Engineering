@@ -2,25 +2,14 @@
 
 Final project documentation for **Problem Workshop in Software Engineering**.
 
-## Table of Contents
+## Team
 
-- [Project Overview](#project-overview)
-- [Main Features](#main-features)
-- [System Architecture](#system-architecture)
-- [Runtime Data Flow](#runtime-data-flow)
-- [Model Architecture](#model-architecture)
-- [Dataset and Classes](#dataset-and-classes)
-- [Training and Fine-Tuning](#training-and-fine-tuning)
-- [Results](#results)
-- [Inference Logic](#inference-logic)
-- [Alert Logic](#alert-logic)
-- [Frontend Dashboard](#frontend-dashboard)
-- [API Endpoints](#api-endpoints)
-- [Docker Usage](#docker-usage)
-- [Project Structure](#project-structure)
-- [Known Limitations](#known-limitations)
-- [Recommended Improvements](#recommended-improvements)
-- [Team](#team)
+- Zuzanna Adamczyk
+- Praskovya Horbach
+- Tobiasz Kowalczyk
+- Nadzeya Silchankava
+- Magdalena Synowiec
+- Beata Szczęsna
 
 ## Project Overview
 
@@ -56,60 +45,184 @@ Main goals:
 - JSON-based detection and alert logs.
 - Docker-based local deployment.
 
+## Project Structure
+
+```text
+.
++-- Dockerfile
++-- docker-compose.yml
++-- README.md
++-- PROJECT_DOCUMENTATION.md
++-- requirements.txt
++-- frontend/
+|   +-- index.html
++-- models/
+|   +-- best_model.pth
+|   +-- fine_tuned_model.pth
+|   +-- learning_statistics.txt
+|   +-- fine_tuning_stats.txt
++-- src/
+|   +-- api/
+|   |   +-- main.py
+|   +-- dataset_utils/
+|   |   +-- category_list.txt
+|   |   +-- clean_jsonl.py
+|   |   +-- copy_balanced_subset.py
+|   |   +-- filter_pip370k.py
+|   |   +-- validate_annotations.py
+|   +-- model_utils/
+|   |   +-- alert_logic.py
+|   |   +-- baseline_model.py
+|   |   +-- fine_tuning.py
+|   |   +-- inference_engine.py
+|   |   +-- model_settings.json
+|   |   +-- inference_results.json
+|   |   +-- alert_events.json
+|   +-- data_pipeline.py
+|   +-- eda.py
+|   +-- setup_data.py
++-- tests/
+```
+
+## Docker Usage
+
+Build the image:
+
+```bash
+docker compose build api
+```
+
+Start the application:
+
+```bash
+docker compose up
+```
+
+Open the dashboard:
+
+```text
+http://localhost:8001
+```
+
+Stop the application:
+
+```bash
+docker compose down
+```
+
+Run fine-tuning:
+
+```bash
+docker compose run --rm api python -m src.model_utils.fine_tuning
+```
+
+The model is saved only when validation accuracy improves. If training is stopped during an epoch, the last fully saved best model remains in `models/fine_tuned_model.pth`.
+
+Run command-line inference:
+
+```bash
+docker compose run --rm api python -m src.model_utils.inference_engine --video path/to/video.mp4
+```
+
+The Compose file also defines a `clip_cache` named volume reserved for optional cache experiments. The current fine-tuning path does not rely on this cache by default.
+
+## Important Output Files
+
+| File | Purpose |
+|---|---|
+| `models/best_model.pth` | Baseline trained model |
+| `models/fine_tuned_model.pth` | Current fine-tuned model used by inference |
+| `models/learning_statistics.txt` | Baseline training logs |
+| `models/fine_tuning_stats.txt` | Fine-tuning metrics |
+| `src/model_utils/inference_results.json` | Detection result log |
+| `src/model_utils/alert_events.json` | Alert transition log |
+
+Uploaded videos are stored in:
+
+```text
+data/uploaded_videos
+```
+
+Training videos are expected in:
+
+```text
+data/videos/<class_name>/
+```
+
 ## System Architecture
 
-The system is divided into four main layers:
+The system is organized as a small set of cooperating components.
+
+The main component groups are:
 
 - **Frontend**: uploads videos and displays live results.
 - **API backend**: receives uploads, starts background analysis, and serves results.
 - **Inference engine**: tracks people, runs action recognition, applies filtering, and updates alerts.
-- **Model layer**: contains the YOLO models and the custom PyTorch action recognition network.
+- **Storage and artifacts**: stores uploaded videos, model weights, detection logs, and alert logs.
+- **Offline model pipeline**: prepares datasets and trains or fine-tunes the action recognition model.
 
 ```mermaid
 flowchart LR
-    U["User"] --> FE["Frontend Dashboard<br/>frontend/index.html"]
-    FE --> API["FastAPI Backend<br/>src/api/main.py"]
-    API --> UP["Uploaded Video<br/>data/uploaded_videos"]
-    API --> IE["InferenceEngine<br/>src/model_utils/inference_engine.py"]
-    IE --> YOLO1["YOLOv8 Person Tracking"]
-    IE --> YOLO2["YOLOv8 Scene Object Detection"]
-    IE --> AR["Action Recognition Model<br/>fine_tuned_model.pth"]
-    IE --> AL["Alert Logic<br/>alert_logic.py"]
-    IE --> JSON1["Detection Results<br/>inference_results.json"]
-    IE --> JSON2["Alert Events<br/>alert_events.json"]
-    IE --> STREAM["Annotated MJPEG Frames<br/>/video_feed"]
-    STREAM --> FE
-    JSON1 --> FE
-    JSON2 --> FE
+    User["User"]
+
+    Frontend["&lt;&lt;component&gt;&gt;<br/>Frontend Dashboard<br/>frontend/index.html"]
+    Backend["&lt;&lt;component&gt;&gt;<br/>FastAPI Backend<br/>src/api/main.py"]
+    Engine["&lt;&lt;component&gt;&gt;<br/>Inference Engine<br/>src/model_utils/inference_engine.py"]
+    Models["&lt;&lt;component&gt;&gt;<br/>AI Models<br/>YOLOv8 + action model"]
+    AlertLogic["&lt;&lt;component&gt;&gt;<br/>Alert Logic<br/>src/model_utils/alert_logic.py"]
+    Training["&lt;&lt;component&gt;&gt;<br/>Offline Training Pipeline<br/>dataset_utils, fine_tuning.py"]
+    Storage[("File Storage<br/>uploaded videos<br/>JSON logs")]
+
+    User --> Frontend
+    Frontend <-->|upload, stream, results| Backend
+
+    Backend -->|starts analysis| Engine
+    Backend -->|saves uploads / reads logs| Storage
+
+    Engine -->|uses| Models
+    Engine -->|uses| AlertLogic
+    Engine -->|writes results| Storage
+
+    Training -.->|trains model weights| Models
 ```
 
 ## Runtime Data Flow
 
-When a video is uploaded, the backend saves it, clears previous logs, and starts background analysis. The inference engine reads frames from the uploaded video, detects people, tracks them, creates frame windows, classifies actions, applies post-processing, updates alert states, and streams annotated frames back to the frontend.
+When a video is uploaded, the FastAPI backend saves it, clears previous JSON logs, and starts background analysis. The inference engine reads the uploaded video, processes frames, detects and tracks people, creates action windows, uses the AI models to classify actions, applies post-processing, updates alert states through the alert logic, and writes detection and alert data to JSON logs. The frontend receives the annotated video stream and detection updates through the backend.
 
 ```mermaid
 sequenceDiagram
     participant User
-    participant Frontend
-    participant API
-    participant Engine as InferenceEngine
-    participant YOLO
-    participant Model as Action Model
-    participant Logs as JSON Logs
+    participant Frontend as Frontend Dashboard
+    participant Backend as FastAPI Backend
+    participant Engine as Inference Engine
+    participant Models as AI Models
+    participant AlertLogic as Alert Logic
+    participant Storage as File Storage
 
     User->>Frontend: Select and upload video
-    Frontend->>API: POST /upload/
-    API->>API: Save video file
-    API->>Logs: Clear previous logs
-    API->>Engine: Start background analysis
-    Engine->>YOLO: Track people and detect scene objects
-    Engine->>Model: Classify action windows
-    Model-->>Engine: Raw action + confidence
-    Engine->>Engine: Filter and smooth predictions
-    Engine->>Engine: Update alert state
-    Engine->>Logs: Save detection and alert data
-    Engine-->>Frontend: Stream annotated frames via /video_feed
-    Logs-->>Frontend: Detection updates via WebSocket
+    Frontend->>Backend: Upload video
+    Backend->>Storage: Save uploaded video
+    Backend->>Storage: Clear previous JSON logs
+    Backend->>Engine: Start background analysis
+
+    Engine->>Storage: Read uploaded video
+    Storage-->>Engine: Uploaded video
+    loop For video frames and action windows
+        Engine->>Models: Detect people and classify actions
+        Models-->>Engine: Detections, action, confidence
+        Engine->>Engine: Filter and smooth predictions
+        Engine->>AlertLogic: Update alert state
+        AlertLogic-->>Engine: Current alert state
+        Engine->>Storage: Write detection and alert logs
+    end
+
+    Frontend->>Backend: Request stream and detection updates
+    Backend->>Engine: Read latest annotated frame
+    Engine-->>Backend: Latest annotated frame
+    Backend->>Storage: Read JSON logs
+    Storage-->>Backend: Detection and alert logs
+    Backend-->>Frontend: Return video stream and results
 ```
 
 ## Model Architecture
@@ -124,19 +237,68 @@ The model uses an ImageNet-pretrained ResNet backbone for spatial feature extrac
 
 ```mermaid
 flowchart TD
+    classDef noteStyle fill:#fffbc8,stroke:#e6db55,stroke-width:1px,stroke-dasharray: 3 3,color:#333;
+
     V["Input Video Clip<br/>(B, 3, T, H, W)"] --> R["Frame Reshape<br/>(B*T, 3, H, W)"]
+    
+    N_Input["The raw video input data split into<br/>batch size, color channels, frames,<br/>height, and width."]:::noteStyle
+    V -.- N_Input
+    
+    N_Reshape["Flattens the video into a pile of<br/>single, flat images so the 2D ResNet<br/>can look at all of them at once."]:::noteStyle
+    R -.- N_Reshape
+
     R --> B["Frozen ResNet Backbone<br/>ImageNet pretrained"]
+    
+    N_Backbone["Uses a smart, pre-trained model to recognize<br/>shapes. It is locked ('frozen') to save<br/>time and avoid changing what it already knows."]:::noteStyle
+    B -.- N_Backbone
+
     B --> F["Frame Feature Maps"]
-    F --> T["Restore Temporal Shape<br/>(B, C, T, H, W)"]
-    T --> C1["3D Conv Layer"]
-    C1 --> P1["MaxPool3D"]
-    P1 --> B1["Conv2Plus1D Block 1"]
-    B1 --> B2["Conv2Plus1D Block 2"]
-    B2 --> P2["MaxPool3D"]
-    P2 --> B3["Conv2Plus1D Block 3"]
-    B3 --> B4["Conv2Plus1D Block 4"]
-    B4 --> GAP["AdaptiveAvgPool3D"]
-    GAP --> FC["Fully Connected Classifier"]
+    
+    N_Feat["The visual description (features) found<br/>in each individual image frame."]:::noteStyle
+    F -.- N_Feat
+
+    F --> T["Restore Temporal Shape<br/>(B, C2, T, H2, W2)"]
+    
+    N_Restore["Puts the frames back into chronological order<br/>so the network can see the movement over time."]:::noteStyle
+    T -.- N_Restore
+    
+    T --> C1["3D Conv Layer<br/>(conv1: in_channels -> 16)"]
+    
+    N_C1["Combines the image shapes and the time order<br/>together for the first time."]:::noteStyle
+    C1 -.- N_C1
+
+    C1 --> P1["MaxPool3D<br/>kernel=(1, 2, 2)"]
+    
+    N_Pool1["Shrinks the image size to save memory,<br/>but does not touch the time/frames."]:::noteStyle
+    P1 -.- N_Pool1
+
+    P1 --> B1["Conv2Plus1D Block 1<br/>(16 -> 16)"]
+    B1 --> B2["Conv2Plus1D Block 2<br/>(16 -> 32)"]
+    
+    N_B12["Looks for patterns in both space and time<br/>while expanding the capacity to hold details."]:::noteStyle
+    B2 -.- N_B12
+    
+    B2 --> P2["MaxPool3D<br/>kernel=(1, 2, 2)"]
+    
+    N_Pool2["Shrinks the image size even more so<br/>the next layers can see the bigger picture."]:::noteStyle
+    P2 -.- N_Pool2
+    
+    P2 --> B3["Conv2Plus1D Block 3<br/>(32 -> 64)"]
+    B3 --> B4["Conv2Plus1D Block 4<br/>(64 -> 128)"]
+    
+    N_Block["Conv2Plus1D<br/>Splits 3D learning into separate 2D space<br/>and 1D time steps. It is faster, lighter,<br/>and prevents the model from memorizing errors."]:::noteStyle
+    B4 -.- N_Block
+
+    B4 --> GAP["AdaptiveAvgPool3D<br/>(1)"]
+    
+    N_GAP["Squashes the remaining video dimensions into<br/>one single long list of numbers (a vector)."]:::noteStyle
+    GAP -.- N_GAP
+
+    GAP --> FC["Fully Connected Classifier<br/>(nn.Linear 128 -> CLASS_COUNT)"]
+    
+    N_FC["Takes the final list of numbers and turns<br/>them into actual scores for each activity class."]:::noteStyle
+    FC -.- N_FC
+
     FC --> OUT["Action Prediction"]
 ```
 
@@ -150,9 +312,9 @@ src/model_utils/model_settings.json
 {
   "HEIGHT": 244,
   "WIDTH": 224,
-  "FRAMES_COUNT": 16,
+  "FRAMES_COUNT": 20,
   "FRAME_STEP": 5,
-  "BATCH_SIZE": 4,
+  "BATCH_SIZE": 2,
   "EPOCHS": 5
 }
 ```
@@ -166,7 +328,7 @@ Input tensor shape:
 Current example:
 
 ```text
-(B, 3, 16, 244, 224)
+(B, 3, 20, 244, 224)
 ```
 
 ## Dataset and Classes
@@ -231,7 +393,8 @@ src/model_utils/fine_tuning.py
 The fine-tuning pipeline:
 
 - uses 4 selected classes,
-- selects a balanced subset of 1000 samples,
+- currently uses all available samples from the selected classes (`FINE_TUNE_SAMPLES = None`),
+- can still use a balanced subset if `FINE_TUNE_SAMPLES` is set to a number,
 - uses deterministic random seeds,
 - loads compatible weights from `models/best_model.pth`,
 - skips incompatible final classifier weights,
@@ -270,7 +433,7 @@ Best recorded baseline validation accuracy:
 
 ### Fine-Tuning Results
 
-Recorded fine-tuning results from `models/fine_tuning_stats.txt`:
+Previous recorded fine-tuning results:
 
 | Epoch | Loss | Train Accuracy | Validation Accuracy |
 |---:|---:|---:|---:|
@@ -285,6 +448,8 @@ Best fine-tuning validation accuracy:
 ```text
 0.7900
 ```
+
+Note: `models/fine_tuning_stats.txt` is overwritten at the start of every new fine-tuning run. If a run is restarted and interrupted early, the file may contain only the CSV header even though `models/fine_tuned_model.pth` still contains the last saved best model weights.
 
 ### Result Summary
 
@@ -459,105 +624,6 @@ src/api/main.py
 | GET | `/video_feed` | Streams annotated MJPEG frames |
 | WS | `/ws/detections` | Sends detection updates through WebSocket |
 
-## Docker Usage
-
-Build the image:
-
-```bash
-docker compose build api
-```
-
-Start the application:
-
-```bash
-docker compose up
-```
-
-Open the dashboard:
-
-```text
-http://localhost:8001
-```
-
-Stop the application:
-
-```bash
-docker compose down
-```
-
-Run fine-tuning:
-
-```bash
-docker compose run --rm api python -m src.model_utils.fine_tuning
-```
-
-Run command-line inference:
-
-```bash
-docker compose run --rm api python -m src.model_utils.inference_engine --video path/to/video.mp4
-```
-
-## Project Structure
-
-```text
-.
-+-- Dockerfile
-+-- docker-compose.yml
-+-- README.md
-+-- PROJECT_DOCUMENTATION.md
-+-- requirements.txt
-+-- frontend/
-|   +-- index.html
-+-- models/
-|   +-- best_model.pth
-|   +-- fine_tuned_model.pth
-|   +-- learning_statistics.txt
-|   +-- fine_tuning_stats.txt
-+-- src/
-|   +-- api/
-|   |   +-- main.py
-|   +-- dataset_utils/
-|   |   +-- category_list.txt
-|   |   +-- clean_jsonl.py
-|   |   +-- copy_balanced_subset.py
-|   |   +-- filter_pip370k.py
-|   |   +-- validate_annotations.py
-|   +-- model_utils/
-|   |   +-- alert_logic.py
-|   |   +-- baseline_model.py
-|   |   +-- fine_tuning.py
-|   |   +-- inference_engine.py
-|   |   +-- model_settings.json
-|   |   +-- inference_results.json
-|   |   +-- alert_events.json
-|   +-- data_pipeline.py
-|   +-- eda.py
-|   +-- setup_data.py
-+-- tests/
-```
-
-## Important Output Files
-
-| File | Purpose |
-|---|---|
-| `models/best_model.pth` | Baseline trained model |
-| `models/fine_tuned_model.pth` | Current fine-tuned model used by inference |
-| `models/learning_statistics.txt` | Baseline training logs |
-| `models/fine_tuning_stats.txt` | Fine-tuning metrics |
-| `src/model_utils/inference_results.json` | Detection result log |
-| `src/model_utils/alert_events.json` | Alert transition log |
-
-Uploaded videos are stored in:
-
-```text
-data/uploaded_videos
-```
-
-Training videos are expected in:
-
-```text
-data/videos/<class_name>/
-```
 
 ## Testing
 
@@ -587,12 +653,3 @@ Run tests inside Docker:
 ```bash
 docker compose run --rm api pytest
 ```
-
-## Team
-
-- Zuzanna Adamczyk
-- Praskovya Horbach
-- Tobiasz Kowalczyk
-- Silchankava Nadzeja
-- Magdalena Synowiec
-- Beata Szczesna

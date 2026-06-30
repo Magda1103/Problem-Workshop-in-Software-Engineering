@@ -151,7 +151,7 @@ data/videos/<class_name>/
 
 ## System Architecture
 
-The system is organized as a small set of cooperating components. The diagram below shows the main responsibilities and dependencies, without expanding every endpoint or internal method.
+The system is organized as a small set of cooperating components. The diagram below uses UML component notation and shows the main responsibilities and dependencies, without expanding every endpoint or internal method.
 
 The main component groups are:
 
@@ -161,20 +161,47 @@ The main component groups are:
 - **Storage and artifacts**: stores uploaded videos, model weights, detection logs, and alert logs.
 - **Offline model pipeline**: prepares datasets and trains or fine-tunes the action recognition model.
 
-```mermaid
-flowchart LR
-    User["User"] --> Frontend["Frontend Dashboard<br/>frontend/index.html"]
-    Frontend <-->|upload video, stream, results| Backend["FastAPI Backend<br/>src/api/main.py"]
+```plantuml
+@startuml
+left to right direction
+skinparam componentStyle uml2
+skinparam shadowing false
 
-    Backend -->|starts analysis| Engine["Inference Engine<br/>src/model_utils/inference_engine.py"]
-    Backend -->|saves videos and serves logs| Storage["File Storage<br/>uploaded videos, JSON logs"]
+actor User
 
-    Engine -->|detects people and scene objects| YOLO["YOLOv8 Models"]
-    Engine -->|classifies actions| ActionModel["Action Recognition Model<br/>fine_tuned_model.pth"]
-    Engine -->|updates alert state| AlertLogic["Alert Logic<br/>alert_logic.py"]
-    Engine -->|writes detections and alerts| Storage
+component "Frontend Dashboard\nfrontend/index.html" as Frontend
+component "FastAPI Backend\nsrc/api/main.py" as Backend
+component "Inference Engine\nsrc/model_utils/inference_engine.py" as Engine
+component "YOLOv8 Models" as Yolo
+component "Action Recognition Model\nmodels/fine_tuned_model.pth" as ActionModel
+component "Alert Logic\nsrc/model_utils/alert_logic.py" as AlertLogic
+database "File Storage\nuploaded videos\nJSON logs" as Storage
+component "Offline Training Pipeline\nsrc/dataset_utils\nfine_tuning.py" as Training
 
-    Training["Offline Training Pipeline<br/>dataset_utils, baseline_model.py, fine_tuning.py"] -->|creates model weights| ActionModel
+interface "Dashboard API" as DashboardAPI
+interface "Analysis Service" as AnalysisService
+interface "Storage Access" as StorageAccess
+interface "Model Weights" as ModelWeights
+
+User --> Frontend
+
+Frontend ..> DashboardAPI : uses
+DashboardAPI - Backend
+
+Backend ..> AnalysisService : starts analysis
+AnalysisService - Engine
+
+Backend ..> StorageAccess : saves videos / reads logs
+Engine ..> StorageAccess : writes results
+StorageAccess - Storage
+
+Engine ..> Yolo : detects and tracks people
+Engine ..> ActionModel : classifies actions
+Engine ..> AlertLogic : updates alert state
+
+Training ..> ModelWeights : creates
+ModelWeights - ActionModel
+@enduml
 ```
 
 ## Runtime Data Flow

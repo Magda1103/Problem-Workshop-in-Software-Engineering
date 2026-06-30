@@ -2,27 +2,14 @@
 
 Final project documentation for **Problem Workshop in Software Engineering**.
 
-## Table of Contents
+## Team
 
-- [Project Overview](#project-overview)
-- [Main Features](#main-features)
-- [System Architecture](#system-architecture)
-- [Runtime Data Flow](#runtime-data-flow)
-- [Model Architecture](#model-architecture)
-- [Dataset and Classes](#dataset-and-classes)
-- [Training and Fine-Tuning](#training-and-fine-tuning)
-- [Results](#results)
-- [Inference Logic](#inference-logic)
-- [Alert Logic](#alert-logic)
-- [Frontend Dashboard](#frontend-dashboard)
-- [API Endpoints](#api-endpoints)
-- [Docker Usage](#docker-usage)
-- [Project Structure](#project-structure)
-- [Important Output Files](#important-output-files)
-- [Testing](#testing)
-- [Known Limitations](#known-limitations)
-- [Recommended Improvements](#recommended-improvements)
-- [Team](#team)
+- Zuzanna Adamczyk
+- Praskovya Horbach
+- Tobiasz Kowalczyk
+- Silchankava Nadzeja
+- Magdalena Synowiec
+- Beata Szczesna
 
 ## Project Overview
 
@@ -57,6 +44,110 @@ Main goals:
 - Alert logic for suspicious behavior.
 - JSON-based detection and alert logs.
 - Docker-based local deployment.
+
+## Project Structure
+
+```text
+.
++-- Dockerfile
++-- docker-compose.yml
++-- README.md
++-- PROJECT_DOCUMENTATION.md
++-- requirements.txt
++-- frontend/
+|   +-- index.html
++-- models/
+|   +-- best_model.pth
+|   +-- fine_tuned_model.pth
+|   +-- learning_statistics.txt
+|   +-- fine_tuning_stats.txt
++-- src/
+|   +-- api/
+|   |   +-- main.py
+|   +-- dataset_utils/
+|   |   +-- category_list.txt
+|   |   +-- clean_jsonl.py
+|   |   +-- copy_balanced_subset.py
+|   |   +-- filter_pip370k.py
+|   |   +-- validate_annotations.py
+|   +-- model_utils/
+|   |   +-- alert_logic.py
+|   |   +-- baseline_model.py
+|   |   +-- fine_tuning.py
+|   |   +-- inference_engine.py
+|   |   +-- model_settings.json
+|   |   +-- inference_results.json
+|   |   +-- alert_events.json
+|   +-- data_pipeline.py
+|   +-- eda.py
+|   +-- setup_data.py
++-- tests/
+```
+
+## Docker Usage
+
+Build the image:
+
+```bash
+docker compose build api
+```
+
+Start the application:
+
+```bash
+docker compose up
+```
+
+Open the dashboard:
+
+```text
+http://localhost:8001
+```
+
+Stop the application:
+
+```bash
+docker compose down
+```
+
+Run fine-tuning:
+
+```bash
+docker compose run --rm api python -m src.model_utils.fine_tuning
+```
+
+The model is saved only when validation accuracy improves. If training is stopped during an epoch, the last fully saved best model remains in `models/fine_tuned_model.pth`.
+
+Run command-line inference:
+
+```bash
+docker compose run --rm api python -m src.model_utils.inference_engine --video path/to/video.mp4
+```
+
+The Compose file also defines a `clip_cache` named volume reserved for optional cache experiments. The current fine-tuning path does not rely on this cache by default.
+
+## Important Output Files
+
+| File | Purpose |
+|---|---|
+| `models/best_model.pth` | Baseline trained model |
+| `models/fine_tuned_model.pth` | Current fine-tuned model used by inference |
+| `models/learning_statistics.txt` | Baseline training logs |
+| `models/fine_tuning_stats.txt` | Fine-tuning metrics |
+| `src/model_utils/inference_results.json` | Detection result log |
+| `src/model_utils/alert_events.json` | Alert transition log |
+
+Uploaded videos are stored in:
+
+```text
+data/uploaded_videos
+```
+
+Training videos are expected in:
+
+```text
+data/videos/<class_name>/
+```
 
 ## System Architecture
 
@@ -464,109 +555,6 @@ src/api/main.py
 | GET | `/video_feed` | Streams annotated MJPEG frames |
 | WS | `/ws/detections` | Sends detection updates through WebSocket |
 
-## Docker Usage
-
-Build the image:
-
-```bash
-docker compose build api
-```
-
-Start the application:
-
-```bash
-docker compose up
-```
-
-Open the dashboard:
-
-```text
-http://localhost:8001
-```
-
-Stop the application:
-
-```bash
-docker compose down
-```
-
-Run fine-tuning:
-
-```bash
-docker compose run --rm api python -m src.model_utils.fine_tuning
-```
-
-The model is saved only when validation accuracy improves. If training is stopped during an epoch, the last fully saved best model remains in `models/fine_tuned_model.pth`.
-
-Run command-line inference:
-
-```bash
-docker compose run --rm api python -m src.model_utils.inference_engine --video path/to/video.mp4
-```
-
-The Compose file also defines a `clip_cache` named volume reserved for optional cache experiments. The current fine-tuning path does not rely on this cache by default.
-
-## Project Structure
-
-```text
-.
-+-- Dockerfile
-+-- docker-compose.yml
-+-- README.md
-+-- PROJECT_DOCUMENTATION.md
-+-- requirements.txt
-+-- frontend/
-|   +-- index.html
-+-- models/
-|   +-- best_model.pth
-|   +-- fine_tuned_model.pth
-|   +-- learning_statistics.txt
-|   +-- fine_tuning_stats.txt
-+-- src/
-|   +-- api/
-|   |   +-- main.py
-|   +-- dataset_utils/
-|   |   +-- category_list.txt
-|   |   +-- clean_jsonl.py
-|   |   +-- copy_balanced_subset.py
-|   |   +-- filter_pip370k.py
-|   |   +-- validate_annotations.py
-|   +-- model_utils/
-|   |   +-- alert_logic.py
-|   |   +-- baseline_model.py
-|   |   +-- fine_tuning.py
-|   |   +-- inference_engine.py
-|   |   +-- model_settings.json
-|   |   +-- inference_results.json
-|   |   +-- alert_events.json
-|   +-- data_pipeline.py
-|   +-- eda.py
-|   +-- setup_data.py
-+-- tests/
-```
-
-## Important Output Files
-
-| File | Purpose |
-|---|---|
-| `models/best_model.pth` | Baseline trained model |
-| `models/fine_tuned_model.pth` | Current fine-tuned model used by inference |
-| `models/learning_statistics.txt` | Baseline training logs |
-| `models/fine_tuning_stats.txt` | Fine-tuning metrics |
-| `src/model_utils/inference_results.json` | Detection result log |
-| `src/model_utils/alert_events.json` | Alert transition log |
-
-Uploaded videos are stored in:
-
-```text
-data/uploaded_videos
-```
-
-Training videos are expected in:
-
-```text
-data/videos/<class_name>/
-```
 
 ## Testing
 
@@ -597,11 +585,4 @@ Run tests inside Docker:
 docker compose run --rm api pytest
 ```
 
-## Team
 
-- Zuzanna Adamczyk
-- Praskovya Horbach
-- Tobiasz Kowalczyk
-- Silchankava Nadzeja
-- Magdalena Synowiec
-- Beata Szczesna

@@ -151,29 +151,84 @@ data/videos/<class_name>/
 
 ## System Architecture
 
-The system is divided into four main layers:
+The system is organized as cooperating components. The diagram below focuses on component responsibilities and interfaces, rather than on the exact step-by-step runtime flow.
+
+The main component groups are:
 
 - **Frontend**: uploads videos and displays live results.
 - **API backend**: receives uploads, starts background analysis, and serves results.
 - **Inference engine**: tracks people, runs action recognition, applies filtering, and updates alerts.
-- **Model layer**: contains the YOLO models and the custom PyTorch action recognition network.
+- **Storage and artifacts**: stores uploaded videos, model weights, detection logs, and alert logs.
+- **Offline model pipeline**: prepares datasets and trains or fine-tunes the action recognition model.
 
 ```mermaid
 flowchart LR
-    U["User"] --> FE["Frontend Dashboard<br/>frontend/index.html"]
-    FE --> API["FastAPI Backend<br/>src/api/main.py"]
-    API --> UP["Uploaded Video<br/>data/uploaded_videos"]
-    API --> IE["InferenceEngine<br/>src/model_utils/inference_engine.py"]
-    IE --> YOLO1["YOLOv8 Person Tracking"]
-    IE --> YOLO2["YOLOv8 Scene Object Detection"]
-    IE --> AR["Action Recognition Model<br/>fine_tuned_model.pth"]
-    IE --> AL["Alert Logic<br/>alert_logic.py"]
-    IE --> JSON1["Detection Results<br/>inference_results.json"]
-    IE --> JSON2["Alert Events<br/>alert_events.json"]
-    IE --> STREAM["Annotated MJPEG Frames<br/>/video_feed"]
-    STREAM --> FE
-    JSON1 --> FE
-    JSON2 --> FE
+    U["User"]
+
+    subgraph Client["Client layer"]
+        FE["Frontend Dashboard<br/>frontend/index.html"]
+    end
+
+    subgraph Backend["Application layer"]
+        API["FastAPI Application<br/>src/api/main.py"]
+        Upload["Upload Controller<br/>POST /upload/"]
+        Stream["Video Stream Endpoint<br/>GET /video_feed"]
+        DetectionAPI["Detection and Alert API<br/>/detections/*, /alert-events, /ws/detections"]
+        Task["Background Analysis Task<br/>run_ai_analysis()"]
+    end
+
+    subgraph Inference["Inference components"]
+        Engine["InferenceEngine<br/>src/model_utils/inference_engine.py"]
+        Tracker["Person Tracking<br/>YOLOv8 tracking"]
+        Scene["Scene Object Detection<br/>YOLOv8 object classes"]
+        Classifier["Action Recognition<br/>ActionRecognition model"]
+        Postprocess["Prediction Post-processing<br/>confidence filtering and smoothing"]
+        Alerts["Alert Logic<br/>src/model_utils/alert_logic.py"]
+        FrameBuffer["Latest Frame Buffer<br/>LATEST_FRAME"]
+    end
+
+    subgraph Storage["Storage and artifacts"]
+        UploadedVideos["Uploaded Videos<br/>data/uploaded_videos"]
+        ModelWeights["Model Weights<br/>models/fine_tuned_model.pth"]
+        DetectionLog["Detection Log<br/>inference_results.json"]
+        AlertLog["Alert Event Log<br/>alert_events.json"]
+    end
+
+    subgraph Training["Offline model pipeline"]
+        DatasetTools["Dataset Utilities<br/>src/dataset_utils/"]
+        TrainingPipeline["Training and Fine-tuning<br/>baseline_model.py, fine_tuning.py"]
+    end
+
+    U --> FE
+    FE -->|upload video| Upload
+    FE -->|read detections and alerts| DetectionAPI
+    FE -->|display annotated stream| Stream
+
+    API --- Upload
+    API --- DetectionAPI
+    API --- Stream
+
+    Upload --> UploadedVideos
+    Upload --> Task
+    Task --> Engine
+
+    Engine --> Tracker
+    Engine --> Scene
+    Engine --> Classifier
+    Engine --> Postprocess
+    Postprocess --> Alerts
+    Classifier --> ModelWeights
+
+    Engine --> FrameBuffer
+    Engine --> DetectionLog
+    Alerts --> AlertLog
+
+    Stream --> FrameBuffer
+    DetectionAPI --> DetectionLog
+    DetectionAPI --> AlertLog
+
+    DatasetTools --> TrainingPipeline
+    TrainingPipeline --> ModelWeights
 ```
 
 ## Runtime Data Flow
@@ -584,5 +639,4 @@ Run tests inside Docker:
 ```bash
 docker compose run --rm api pytest
 ```
-
 

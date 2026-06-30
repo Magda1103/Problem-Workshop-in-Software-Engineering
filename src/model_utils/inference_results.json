@@ -1,60 +1,9 @@
 [
     {
-        "video_source": "A_realistic_surveillance_style-4.mp4",
+        "video_source": "videoplayback-3.mp4",
         "track_id": 1,
-        "final_action": "uncertain",
-        "confidence_score": "51.98%",
-        "current_alert_state": "SAFE",
-        "max_alert_state": "SAFE",
-        "anomaly_counter": 0,
-        "danger_count": 0,
-        "warning_count": 0,
-        "scene": {
-            "objects": [],
-            "env_guess": "unknown",
-            "people_seen": 1,
-            "scene_summ": "Environment: unknown, people seen: 1"
-        }
-    },
-    {
-        "video_source": "A_realistic_surveillance_style-4.mp4",
-        "track_id": 1,
-        "final_action": "person_picks_up_object",
-        "confidence_score": "59.07%",
-        "current_alert_state": "SAFE",
-        "max_alert_state": "SAFE",
-        "anomaly_counter": 0,
-        "danger_count": 0,
-        "warning_count": 0,
-        "scene": {
-            "objects": [],
-            "env_guess": "unknown",
-            "people_seen": 1,
-            "scene_summ": "Environment: unknown, people seen: 1"
-        }
-    },
-    {
-        "video_source": "A_realistic_surveillance_style-4.mp4",
-        "track_id": 1,
-        "final_action": "person_picks_up_object",
-        "confidence_score": "62.14%",
-        "current_alert_state": "SAFE",
-        "max_alert_state": "SAFE",
-        "anomaly_counter": 0,
-        "danger_count": 0,
-        "warning_count": 0,
-        "scene": {
-            "objects": [],
-            "env_guess": "unknown",
-            "people_seen": 1,
-            "scene_summ": "Environment: unknown, people seen: 1"
-        }
-    },
-    {
-        "video_source": "A_realistic_surveillance_style-4.mp4",
-        "track_id": 1,
-        "final_action": "uncertain",
-        "confidence_score": "48.39%",
+        "final_action": "person_enters_car",
+        "confidence_score": "79.01%",
         "current_alert_state": "SAFE",
         "max_alert_state": "SAFE",
         "anomaly_counter": 0,
@@ -62,18 +11,19 @@
         "warning_count": 0,
         "scene": {
             "objects": [
-                "skateboard"
+                "car",
+                "handbag"
             ],
             "env_guess": "outdoors",
             "people_seen": 1,
-            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: skateboard"
+            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: car, handbag"
         }
     },
     {
-        "video_source": "A_realistic_surveillance_style-4.mp4",
+        "video_source": "videoplayback-3.mp4",
         "track_id": 1,
-        "final_action": "uncertain",
-        "confidence_score": "46.37%",
+        "final_action": "person_enters_car",
+        "confidence_score": "76.85%",
         "current_alert_state": "SAFE",
         "max_alert_state": "SAFE",
         "anomaly_counter": 0,
@@ -81,68 +31,306 @@
         "warning_count": 0,
         "scene": {
             "objects": [
-                "skateboard"
+                "car",
+                "handbag"
             ],
             "env_guess": "outdoors",
             "people_seen": 1,
-            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: skateboard"
+            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: car, handbag"
         }
     },
     {
-        "video_source": "A_realistic_surveillance_style-4.mp4",
-        "track_id": 1,
-        "final_action": "uncertain",
-        "confidence_score": "46.59%",
-        "current_alert_state": "SAFE",
-        "max_alert_state": "SAFE",
-        "anomaly_counter": 0,
-        "danger_count": 0,
-        "warning_count": 0,
-        "scene": {
-            "objects": [
-                "skateboard"
-            ],
-            "env_guess": "outdoors",
-            "people_seen": 1,
-            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: skateboard"
-        }
-    },
-    {
-        "video_source": "A_realistic_surveillance_style-4.mp4",
+        "video_source": "videoplayback-3.mp4",
         "track_id": 1,
         "final_action": "person_steals_object",
-        "confidence_score": "56.78%",
+        "confidence_score": "60.34%",
         "current_alert_state": "WARNING",
         "max_alert_state": "WARNING",
-        "anomaly_counter": 1,
+        "anomaly_counter": 3,
         "danger_count": 0,
         "warning_count": 1,
         "scene": {
             "objects": [
-                "skateboard"
+                "car",
+                "truck",
+                "handbag"
             ],
             "env_guess": "outdoors",
             "people_seen": 1,
-            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: skateboard"
+            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: car, truck, handbag"
         }
     },
     {
-        "video_source": "A_realistic_surveillance_style-4.mp4",
+        "video_source": "videoplayback-3.mp4",
         "track_id": 1,
         "final_action": "person_steals_object",
-        "confidence_score": "57.59%",
+        "confidence_score": "61.23%",
         "current_alert_state": "WARNING",
         "max_alert_state": "WARNING",
         "anomaly_counter": 2,
         "danger_count": 0,
-        "warning_count": 1,
+        "warning_count": 2,
         "scene": {
             "objects": [
-                "skateboard"
+                "car",
+                "truck",
+                "handbag"
             ],
             "env_guess": "outdoors",
             "people_seen": 1,
-            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: skateboard"
+            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: car, truck, handbag"
+        }
+    },
+    {
+        "video_source": "videoplayback-3.mp4",
+        "track_id": 1,
+        "final_action": "uncertain",
+        "confidence_score": "45.15%",
+        "current_alert_state": "SAFE",
+        "max_alert_state": "DANGER",
+        "anomaly_counter": 0,
+        "danger_count": 1,
+        "warning_count": 2,
+        "scene": {
+            "objects": [
+                "car",
+                "truck",
+                "handbag"
+            ],
+            "env_guess": "outdoors",
+            "people_seen": 1,
+            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: car, truck, handbag"
+        }
+    },
+    {
+        "video_source": "videoplayback-3.mp4",
+        "track_id": 1,
+        "final_action": "person_enters_car",
+        "confidence_score": "61.79%",
+        "current_alert_state": "SAFE",
+        "max_alert_state": "DANGER",
+        "anomaly_counter": 0,
+        "danger_count": 1,
+        "warning_count": 2,
+        "scene": {
+            "objects": [
+                "car",
+                "truck",
+                "handbag"
+            ],
+            "env_guess": "outdoors",
+            "people_seen": 1,
+            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: car, truck, handbag"
+        }
+    },
+    {
+        "video_source": "videoplayback-3.mp4",
+        "track_id": 1,
+        "final_action": "person_enters_car",
+        "confidence_score": "62.31%",
+        "current_alert_state": "SAFE",
+        "max_alert_state": "DANGER",
+        "anomaly_counter": 0,
+        "danger_count": 1,
+        "warning_count": 2,
+        "scene": {
+            "objects": [
+                "car",
+                "truck",
+                "handbag"
+            ],
+            "env_guess": "outdoors",
+            "people_seen": 1,
+            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: car, truck, handbag"
+        }
+    },
+    {
+        "video_source": "videoplayback-3.mp4",
+        "track_id": 1,
+        "final_action": "person_enters_car",
+        "confidence_score": "61.68%",
+        "current_alert_state": "SAFE",
+        "max_alert_state": "DANGER",
+        "anomaly_counter": 0,
+        "danger_count": 1,
+        "warning_count": 2,
+        "scene": {
+            "objects": [
+                "car",
+                "truck",
+                "handbag"
+            ],
+            "env_guess": "outdoors",
+            "people_seen": 1,
+            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: car, truck, handbag"
+        }
+    },
+    {
+        "video_source": "videoplayback-3.mp4",
+        "track_id": 1,
+        "final_action": "person_enters_car",
+        "confidence_score": "83.56%",
+        "current_alert_state": "SAFE",
+        "max_alert_state": "DANGER",
+        "anomaly_counter": 0,
+        "danger_count": 1,
+        "warning_count": 2,
+        "scene": {
+            "objects": [
+                "car",
+                "truck",
+                "handbag"
+            ],
+            "env_guess": "outdoors",
+            "people_seen": 1,
+            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: car, truck, handbag"
+        }
+    },
+    {
+        "video_source": "videoplayback-3.mp4",
+        "track_id": 1,
+        "final_action": "person_enters_car",
+        "confidence_score": "94.39%",
+        "current_alert_state": "SAFE",
+        "max_alert_state": "DANGER",
+        "anomaly_counter": 0,
+        "danger_count": 1,
+        "warning_count": 2,
+        "scene": {
+            "objects": [
+                "car",
+                "truck",
+                "handbag"
+            ],
+            "env_guess": "outdoors",
+            "people_seen": 1,
+            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: car, truck, handbag"
+        }
+    },
+    {
+        "video_source": "videoplayback-3.mp4",
+        "track_id": 1,
+        "final_action": "person_enters_car",
+        "confidence_score": "95.73%",
+        "current_alert_state": "SAFE",
+        "max_alert_state": "DANGER",
+        "anomaly_counter": 0,
+        "danger_count": 1,
+        "warning_count": 2,
+        "scene": {
+            "objects": [
+                "car",
+                "truck",
+                "handbag"
+            ],
+            "env_guess": "outdoors",
+            "people_seen": 1,
+            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: car, truck, handbag"
+        }
+    },
+    {
+        "video_source": "videoplayback-3.mp4",
+        "track_id": 1,
+        "final_action": "person_enters_car",
+        "confidence_score": "95.79%",
+        "current_alert_state": "SAFE",
+        "max_alert_state": "DANGER",
+        "anomaly_counter": 0,
+        "danger_count": 1,
+        "warning_count": 2,
+        "scene": {
+            "objects": [
+                "car",
+                "truck",
+                "handbag"
+            ],
+            "env_guess": "outdoors",
+            "people_seen": 1,
+            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: car, truck, handbag"
+        }
+    },
+    {
+        "video_source": "videoplayback-3.mp4",
+        "track_id": 1,
+        "final_action": "person_enters_car",
+        "confidence_score": "76.01%",
+        "current_alert_state": "SAFE",
+        "max_alert_state": "DANGER",
+        "anomaly_counter": 0,
+        "danger_count": 1,
+        "warning_count": 2,
+        "scene": {
+            "objects": [
+                "car",
+                "truck",
+                "handbag"
+            ],
+            "env_guess": "outdoors",
+            "people_seen": 1,
+            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: car, truck, handbag"
+        }
+    },
+    {
+        "video_source": "videoplayback-3.mp4",
+        "track_id": 1,
+        "final_action": "person_enters_car",
+        "confidence_score": "57.08%",
+        "current_alert_state": "SAFE",
+        "max_alert_state": "DANGER",
+        "anomaly_counter": 0,
+        "danger_count": 1,
+        "warning_count": 2,
+        "scene": {
+            "objects": [
+                "car",
+                "truck",
+                "handbag"
+            ],
+            "env_guess": "outdoors",
+            "people_seen": 1,
+            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: car, truck, handbag"
+        }
+    },
+    {
+        "video_source": "videoplayback-3.mp4",
+        "track_id": 1,
+        "final_action": "person_enters_car",
+        "confidence_score": "61.15%",
+        "current_alert_state": "SAFE",
+        "max_alert_state": "DANGER",
+        "anomaly_counter": 0,
+        "danger_count": 1,
+        "warning_count": 2,
+        "scene": {
+            "objects": [
+                "car",
+                "truck",
+                "handbag"
+            ],
+            "env_guess": "outdoors",
+            "people_seen": 1,
+            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: car, truck, handbag"
+        }
+    },
+    {
+        "video_source": "videoplayback-3.mp4",
+        "track_id": 1,
+        "final_action": "person_enters_car",
+        "confidence_score": "61.39%",
+        "current_alert_state": "SAFE",
+        "max_alert_state": "DANGER",
+        "anomaly_counter": 0,
+        "danger_count": 1,
+        "warning_count": 2,
+        "scene": {
+            "objects": [
+                "car",
+                "truck",
+                "handbag"
+            ],
+            "env_guess": "outdoors",
+            "people_seen": 1,
+            "scene_summ": "Environment: outdoors, people seen: 1, surroundings: car, truck, handbag"
         }
     }
 ]

@@ -1,9 +1,37 @@
 [
     {
-        "time": 9.62,
+        "time": 2.23,
         "track_id": 1,
         "action": "person_steals_object",
         "from_state": "SAFE",
         "to_state": "WARNING"
+    },
+    {
+        "time": 3.23,
+        "track_id": 1,
+        "action": "uncertain",
+        "from_state": "WARNING",
+        "to_state": "SAFE"
+    },
+    {
+        "time": 3.57,
+        "track_id": 1,
+        "action": "person_steals_object",
+        "from_state": "SAFE",
+        "to_state": "WARNING"
+    },
+    {
+        "time": 4.4,
+        "track_id": 1,
+        "action": "person_steals_object",
+        "from_state": "WARNING",
+        "to_state": "DANGER"
+    },
+    {
+        "time": 4.73,
+        "track_id": 1,
+        "action": "uncertain",
+        "from_state": "DANGER",
+        "to_state": "SAFE"
     }
 ]

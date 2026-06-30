@@ -7,9 +7,9 @@ Final project documentation for **Problem Workshop in Software Engineering**.
 - Zuzanna Adamczyk
 - Praskovya Horbach
 - Tobiasz Kowalczyk
-- Silchankava Nadzeja
+- Nadzeya Silchankava
 - Magdalena Synowiec
-- Beata Szczesna
+- Beata Szczęsna
 
 ## Project Overview
 

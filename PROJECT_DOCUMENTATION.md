@@ -237,19 +237,68 @@ The model uses an ImageNet-pretrained ResNet backbone for spatial feature extrac
 
 ```mermaid
 flowchart TD
+    classDef noteStyle fill:#fffbc8,stroke:#e6db55,stroke-width:1px,stroke-dasharray: 3 3,color:#333;
+
     V["Input Video Clip<br/>(B, 3, T, H, W)"] --> R["Frame Reshape<br/>(B*T, 3, H, W)"]
+    
+    N_Input["The raw video input data split into<br/>batch size, color channels, frames,<br/>height, and width."]:::noteStyle
+    V -.- N_Input
+    
+    N_Reshape["Flattens the video into a pile of<br/>single, flat images so the 2D ResNet<br/>can look at all of them at once."]:::noteStyle
+    R -.- N_Reshape
+
     R --> B["Frozen ResNet Backbone<br/>ImageNet pretrained"]
+    
+    N_Backbone["Uses a smart, pre-trained model to recognize<br/>shapes. It is locked ('frozen') to save<br/>time and avoid changing what it already knows."]:::noteStyle
+    B -.- N_Backbone
+
     B --> F["Frame Feature Maps"]
-    F --> T["Restore Temporal Shape<br/>(B, C, T, H, W)"]
-    T --> C1["3D Conv Layer"]
-    C1 --> P1["MaxPool3D"]
-    P1 --> B1["Conv2Plus1D Block 1"]
-    B1 --> B2["Conv2Plus1D Block 2"]
-    B2 --> P2["MaxPool3D"]
-    P2 --> B3["Conv2Plus1D Block 3"]
-    B3 --> B4["Conv2Plus1D Block 4"]
-    B4 --> GAP["AdaptiveAvgPool3D"]
-    GAP --> FC["Fully Connected Classifier"]
+    
+    N_Feat["The visual description (features) found<br/>in each individual image frame."]:::noteStyle
+    F -.- N_Feat
+
+    F --> T["Restore Temporal Shape<br/>(B, C2, T, H2, W2)"]
+    
+    N_Restore["Puts the frames back into chronological order<br/>so the network can see the movement over time."]:::noteStyle
+    T -.- N_Restore
+    
+    T --> C1["3D Conv Layer<br/>(conv1: in_channels -> 16)"]
+    
+    N_C1["Combines the image shapes and the time order<br/>together for the first time."]:::noteStyle
+    C1 -.- N_C1
+
+    C1 --> P1["MaxPool3D<br/>kernel=(1, 2, 2)"]
+    
+    N_Pool1["Shrinks the image size to save memory,<br/>but does not touch the time/frames."]:::noteStyle
+    P1 -.- N_Pool1
+
+    P1 --> B1["Conv2Plus1D Block 1<br/>(16 -> 16)"]
+    B1 --> B2["Conv2Plus1D Block 2<br/>(16 -> 32)"]
+    
+    N_B12["Looks for patterns in both space and time<br/>while expanding the capacity to hold details."]:::noteStyle
+    B2 -.- N_B12
+    
+    B2 --> P2["MaxPool3D<br/>kernel=(1, 2, 2)"]
+    
+    N_Pool2["Shrinks the image size even more so<br/>the next layers can see the bigger picture."]:::noteStyle
+    P2 -.- N_Pool2
+    
+    P2 --> B3["Conv2Plus1D Block 3<br/>(32 -> 64)"]
+    B3 --> B4["Conv2Plus1D Block 4<br/>(64 -> 128)"]
+    
+    N_Block["Conv2Plus1D<br/>Splits 3D learning into separate 2D space<br/>and 1D time steps. It is faster, lighter,<br/>and prevents the model from memorizing errors."]:::noteStyle
+    B4 -.- N_Block
+
+    B4 --> GAP["AdaptiveAvgPool3D<br/>(1)"]
+    
+    N_GAP["Squashes the remaining video dimensions into<br/>one single long list of numbers (a vector)."]:::noteStyle
+    GAP -.- N_GAP
+
+    GAP --> FC["Fully Connected Classifier<br/>(nn.Linear 128 -> CLASS_COUNT)"]
+    
+    N_FC["Takes the final list of numbers and turns<br/>them into actual scores for each activity class."]:::noteStyle
+    FC -.- N_FC
+
     FC --> OUT["Action Prediction"]
 ```
 

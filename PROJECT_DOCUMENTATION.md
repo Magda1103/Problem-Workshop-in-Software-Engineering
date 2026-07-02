@@ -165,12 +165,12 @@ The main component groups are:
 flowchart LR
     User["User"]
 
-    Frontend["&lt;&lt;component&gt;&gt;<br/>Frontend Dashboard<br/>frontend/index.html"]
-    Backend["&lt;&lt;component&gt;&gt;<br/>FastAPI Backend<br/>src/api/main.py"]
-    Engine["&lt;&lt;component&gt;&gt;<br/>Inference Engine<br/>src/model_utils/inference_engine.py"]
+    Frontend["&lt;&lt;component&gt;&gt;<br/>Frontend Dashboard"]
+    Backend["&lt;&lt;component&gt;&gt;<br/>FastAPI Backend"]
+    Engine["&lt;&lt;component&gt;&gt;<br/>Inference Engine"]
     Models["&lt;&lt;component&gt;&gt;<br/>AI Models<br/>YOLOv8 + action model"]
-    AlertLogic["&lt;&lt;component&gt;&gt;<br/>Alert Logic<br/>src/model_utils/alert_logic.py"]
-    Training["&lt;&lt;component&gt;&gt;<br/>Offline Training Pipeline<br/>dataset_utils, fine_tuning.py"]
+    AlertLogic["&lt;&lt;component&gt;&gt;<br/>Alert Logic"]
+    Training["&lt;&lt;component&gt;&gt;<br/>Offline Training Pipeline"]
     Storage[("File Storage<br/>uploaded videos<br/>JSON logs")]
 
     User --> Frontend
